@@ -1,7 +1,9 @@
 package fi.android.spacify.gesture;
 
-public interface GestureInterface {
+import android.view.MotionEvent;
 
-	public void onGestureDetected();
+public interface GestureInterface<T> {
+
+	public void onGestureDetected(T item, MotionEvent event);
 	
 }

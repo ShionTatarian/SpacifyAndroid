@@ -7,22 +7,22 @@ import android.view.MotionEvent;
 /**
  * Gesture detector for single clicking an object that requires both up and down click. 
  */
-public class SimpleTouchGesture<T> {
+public class SimpleTouchGesture<T> extends SimpleGesture<T> {
 
 	private final int DEFAULT_TOUCH_DELAY = 300; 
 	
 	private long touchDown;
 	private int touchDelay = DEFAULT_TOUCH_DELAY;
-	private WeakReference<T> weakObject;
-	private WeakReference<GestureInterface> weakInterface;
+	protected WeakReference<T> weakObject;
+	protected WeakReference<GestureInterface<T>> weakInterface;
 	
 	/**
 	 * Constructor. Create this gesture when touching object T on ACTION_DOWN.
 	 * 
 	 * @param object
 	 */
-	public SimpleTouchGesture(GestureInterface gIf) {
-		weakInterface = new WeakReference<GestureInterface>(gIf);
+	public SimpleTouchGesture(GestureInterface<T> gIf) {
+		weakInterface = new WeakReference<GestureInterface<T>>(gIf);
 	}
 	
 	/**
@@ -30,7 +30,8 @@ public class SimpleTouchGesture<T> {
 	 * 
 	 * @param object
 	 */
-	public void onTouchDown(T object) {
+	@Override
+	public void onTouchDown(T object, MotionEvent event) {
 		touchDown = System.currentTimeMillis();
 		weakObject = new WeakReference<T>(object);
 	}
@@ -50,12 +51,13 @@ public class SimpleTouchGesture<T> {
 	 * 
 	 * @param object
 	 */
-	public void onTouchUp(T object) {
+	@Override
+	public void onTouchUp(T object, MotionEvent event) {
 		T tapDownObject = weakObject.get();
 		if(tapDownObject != null && System.currentTimeMillis() < touchDown+touchDelay && object.equals(tapDownObject)) {
 			GestureInterface gIf = weakInterface.get();
 			if(gIf != null) {
-				gIf.onGestureDetected();
+				gIf.onGestureDetected(object, event);
 			}
 		}
 	}

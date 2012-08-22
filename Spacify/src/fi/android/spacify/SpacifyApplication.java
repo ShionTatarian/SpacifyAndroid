@@ -1,13 +1,13 @@
 package fi.android.spacify;
 
-import fi.android.spacify.service.WorkService;
 import android.app.Application;
+import fi.android.spacify.service.WorkService;
 
 public class SpacifyApplication extends Application {
 
 	@Override
 	public void onCreate() {
-		WorkService.init();
+		WorkService.init(5);
 		
 		super.onCreate();
 	}
