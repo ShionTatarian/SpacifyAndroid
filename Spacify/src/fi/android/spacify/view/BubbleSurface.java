@@ -13,12 +13,12 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import fi.android.service.WorkService;
 import fi.android.spacify.gesture.GestureInterface;
 import fi.android.spacify.gesture.LongClickGesture;
 import fi.android.spacify.gesture.SimpleTouchGesture;
 import fi.android.spacify.model.Bubble;
 import fi.android.spacify.model.Bubble.BubbleMovement;
-import fi.android.spacify.service.WorkService;
 
 /**
  * 

@@ -1,5 +1,7 @@
 package fi.android.spacify.model;
 
+import org.json.JSONObject;
+
 import android.graphics.Color;
 import android.graphics.Paint;
 
@@ -27,6 +29,10 @@ public class Bubble {
 		int green = (int) (Math.random() * 255);
 		int blue = (int) (Math.random() * 255);
 		paint.setColor(Color.rgb(red, green, blue));
+	}
+
+	public Bubble(JSONObject json) {
+
 	}
 
 	@Override

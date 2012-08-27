@@ -1,7 +1,6 @@
 package fi.android.spacify.activity.bubblespace;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Stack;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -30,7 +29,7 @@ public class BubbleSpaceActivity extends BaseActivity {
 
 	private BubbleSurface bSurface;
 	private PopupControlFragment controlPopup;
-	private final List<Fragment> visibleFragments = new ArrayList<Fragment>();
+	private final Stack<Fragment> visibleFragments = new Stack<Fragment>();
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -55,7 +54,7 @@ public class BubbleSpaceActivity extends BaseActivity {
 
 				FragmentManager fm = getSupportFragmentManager();
 				FragmentTransaction ft = fm.beginTransaction();
-				ft.replace(R.id.bubblespace_control_popup, controlPopup);
+				ft.replace(R.id.popup_controls, controlPopup);
 				ft.commit();
 				
 				visibleFragments.add(controlPopup);
@@ -68,10 +67,8 @@ public class BubbleSpaceActivity extends BaseActivity {
 		if(visibleFragments.size() > 0) {
 			FragmentManager fm = getSupportFragmentManager();
 			FragmentTransaction ft = fm.beginTransaction();
-			for(Fragment f : visibleFragments) {
-				ft.remove(f);
-			}
-			visibleFragments.clear();
+			Fragment f = visibleFragments.pop();
+			ft.remove(f);
 			ft.commit();
 		} else {
 			super.onBackPressed();
