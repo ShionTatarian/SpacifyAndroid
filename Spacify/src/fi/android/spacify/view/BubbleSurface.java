@@ -77,7 +77,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		clearCanvas(canvas);
 
 		for(Bubble b : bubbles) {
-			canvas.drawCircle(b.x, b.y, b.radius, b.paint);
+			b.onDraw(canvas);
 		}
 	}
 
@@ -237,7 +237,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	private LongClickGesture<Bubble> longClickGesture;
 
-	private long id = 0;
+	private int id = 0;
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
@@ -278,12 +278,12 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 						movingBubbles.put(pointerIndex, bHit);
 					}
 				} else {
-					Bubble b = new Bubble(id);
-					id += 1;
-					b.x = x;
-					b.y = y;
-
-					bubbles.add(b);
+					// Bubble b = new Bubble(id);
+					// id += 1;
+					// b.x = x;
+					// b.y = y;
+					//
+					// bubbles.add(b);
 				}
 				break;
 			case MotionEvent.ACTION_MOVE:
@@ -444,7 +444,13 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	public void addBubble(Bubble b) {
+		int tX = (int) (maxX * Math.random());
+		int tY = (int) (maxY * Math.random());
 
+		b.x = tX;
+		b.y = tY;
+
+		bubbles.add(b);
 	}
 
 	private double distance(int x, int y, int bx, int by) {

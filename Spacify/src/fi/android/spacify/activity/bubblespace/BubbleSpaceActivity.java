@@ -4,6 +4,7 @@ import java.util.Stack;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Message;
 import android.os.Vibrator;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -13,8 +14,10 @@ import fi.android.spacify.R;
 import fi.android.spacify.activity.BaseActivity;
 import fi.android.spacify.gesture.GestureInterface;
 import fi.android.spacify.model.Bubble;
+import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BubbleSurface;
 import fi.android.spacify.view.BubbleSurface.BubbleEvents;
+import fi.spacify.android.util.Events;
 
 /**
  * Activity to show bubbles.
@@ -26,6 +29,7 @@ public class BubbleSpaceActivity extends BaseActivity {
 	
 	private Vibrator vibrator;
 	private final int VIBRATION_TIME = 200;
+	private final ContentManagementService cms = ContentManagementService.getInstance();
 
 	private BubbleSurface bSurface;
 	private PopupControlFragment controlPopup;
@@ -43,6 +47,7 @@ public class BubbleSpaceActivity extends BaseActivity {
 		bSurface.setGesture(BubbleEvents.LONG_CLICK, longClick);
 		
 		controlPopup = new PopupControlFragment();
+		cms.fetchBubbles();
 	}
 
 	private final GestureInterface<Bubble> longClick = new GestureInterface<Bubble>() {
@@ -74,5 +79,22 @@ public class BubbleSpaceActivity extends BaseActivity {
 			super.onBackPressed();
 		}
 	};
+
+	@Override
+	public boolean handleMessage(Message msg) {
+
+
+		switch (Events.values()[msg.what]) {
+			case ALL_BUBBLES_FETCHED:
+				for(Bubble b : cms.getBubbles()) {
+					bSurface.addBubble(b);
+				}
+				return true;
+			default:
+				break;
+		}
+
+		return super.handleMessage(msg);
+	}
 	
 }
