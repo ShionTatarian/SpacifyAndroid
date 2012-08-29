@@ -10,6 +10,9 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.view.MotionEvent;
+import android.view.View;
+import android.widget.RelativeLayout;
+import android.widget.RelativeLayout.LayoutParams;
 import fi.android.spacify.R;
 import fi.android.spacify.activity.BaseActivity;
 import fi.android.spacify.gesture.GestureInterface;
@@ -33,6 +36,9 @@ public class BubbleSpaceActivity extends BaseActivity {
 
 	private BubbleSurface bSurface;
 	private PopupControlFragment controlPopup;
+	private final Integer[] popupIDs = { R.id.popup_container_1, R.id.popup_container_2,
+			R.id.popup_container_3, R.id.popup_container_4, R.id.popup_container_5 };
+	private int popup = 0;
 	private final Stack<Fragment> visibleFragments = new Stack<Fragment>();
 	
 	@Override
@@ -45,10 +51,41 @@ public class BubbleSpaceActivity extends BaseActivity {
 		
 		bSurface = (BubbleSurface) findViewById(R.id.bubblespace_surface);
 		bSurface.setGesture(BubbleEvents.LONG_CLICK, longClick);
+		bSurface.setGesture(BubbleEvents.DOUBLE_CLICK, openBubblePopup);
 		
 		controlPopup = new PopupControlFragment();
 		cms.fetchBubbles();
 	}
+
+	private final GestureInterface<Bubble> openBubblePopup = new GestureInterface<Bubble>() {
+
+		@Override
+		public void onGestureDetected(Bubble b, MotionEvent ev) {
+			if(b != null) {
+				vibrator.vibrate(VIBRATION_TIME);
+
+				BaseBubblePopupFragment bubblePopup = new BaseBubblePopupFragment();
+				bubblePopup.setBubble(b);
+				RelativeLayout.LayoutParams params = (LayoutParams) findViewById(popupIDs[popup])
+						.getLayoutParams();
+				params.topMargin = (int) (getResources().getDimension(R.dimen.margin_huge) * (popup + 1));
+
+				FragmentManager fm = getSupportFragmentManager();
+				FragmentTransaction ft = fm.beginTransaction();
+				ft.replace(popupIDs[popup], bubblePopup);
+				ft.commit();
+
+				visibleFragments.add(bubblePopup);
+
+				popup += 1;
+				if(popup >= popupIDs.length) {
+					findViewById(popupIDs[popup - 1]).bringToFront();
+					popup = 0;
+				}
+			}
+		}
+	};
+
 
 	private final GestureInterface<Bubble> longClick = new GestureInterface<Bubble>() {
 		
@@ -73,6 +110,9 @@ public class BubbleSpaceActivity extends BaseActivity {
 			FragmentManager fm = getSupportFragmentManager();
 			FragmentTransaction ft = fm.beginTransaction();
 			Fragment f = visibleFragments.pop();
+			if(f instanceof BaseBubblePopupFragment) {
+				popup -= 1;
+			}
 			ft.remove(f);
 			ft.commit();
 		} else {
@@ -97,4 +137,22 @@ public class BubbleSpaceActivity extends BaseActivity {
 		return super.handleMessage(msg);
 	}
 	
+	/**
+	 * Popup hider onClick.
+	 * 
+	 * @param view
+	 */
+	public void onHiderClick(View view) {
+		onBackPressed();
+	}
+
+	/**
+	 * Bring clicked view to front.
+	 * 
+	 * @param view
+	 */
+	public void onBringToFrontClick(View view) {
+		view.bringToFront();
+	}
+
 }

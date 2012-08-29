@@ -3,7 +3,8 @@
     android:id="@+id/popup_control_background"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="@color/white_transparent_50" >
+    android:background="@color/white_transparent_50"
+    android:onClick="onHiderClick" >
 
     <ListView
         android:id="@+id/popup_control_list"

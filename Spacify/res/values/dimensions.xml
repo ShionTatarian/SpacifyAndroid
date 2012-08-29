@@ -5,6 +5,7 @@
     <dimen name="margin_half">4dp</dimen>
     <dimen name="margin_normal">8dp</dimen>
     <dimen name="margin_double">16dp</dimen>
+    <dimen name="margin_huge">32dp</dimen>
 
     <!-- Popup -->
     <dimen name="popup_control_width">200dp</dimen>

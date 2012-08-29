@@ -45,7 +45,8 @@ public class Bubble {
 	public Paint bubblePaint, titlePaint;
 
 	private int priority, id;
-	private String debugID, type, style, title, contents, titleImageUrl, contentImageUrl;
+	private String debugID = "", type = "", style = "", title = "", contents = "",
+			titleImageUrl = "", contentImageUrl = "";
 	private List<Integer> links = new ArrayList<Integer>();
 
 	public Bubble(int id) {
@@ -127,6 +128,24 @@ public class Bubble {
 
 	public void animateMoveTo(int x, int y) {
 
+	}
+
+	/**
+	 * Get id of this Bubble.
+	 * 
+	 * @return ID as integer
+	 */
+	public int getID() {
+		return id;
+	}
+
+	/**
+	 * Get content of the bubble.
+	 * 
+	 * @return String content of this Bubble.
+	 */
+	public String getContent() {
+		return contents;
 	}
 
 	public void onDraw(Canvas canvas) {

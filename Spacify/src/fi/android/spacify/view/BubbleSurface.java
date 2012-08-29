@@ -36,6 +36,8 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	 */
 	private final int MAX_REFRESH_RATE = 1000 / 60;
 
+	private final int DOUBLE_TAP_INTERVAL = 500;
+
 	private GraphicThread graphicThread;
 	private MovementThread movementThread;
 	private final HashMap<Integer, SimpleTouchGesture<Bubble>> gestureList = new HashMap<Integer, SimpleTouchGesture<Bubble>>();
@@ -54,6 +56,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	public static class BubbleEvents {
 		public static final String SINGLE_TOUCH = "singleTouch";
 		public static final String LONG_CLICK = "longClick";
+		public static final String DOUBLE_CLICK = "doubleClick";
 	}
 
 	/**
@@ -237,6 +240,8 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	private LongClickGesture<Bubble> longClickGesture;
 
+	private long doubleClickFirstDown = 0;
+	private int doubleClickFirstClickID = -1;
 	private int id = 0;
 
 	@Override
@@ -263,6 +268,20 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 				if(bHit != null) {
 					GestureInterface<Bubble> singleTouch = gestureMap.get(BubbleEvents.SINGLE_TOUCH);
 					GestureInterface<Bubble> longClick = gestureMap.get(BubbleEvents.LONG_CLICK);
+					GestureInterface<Bubble> doubleClick = gestureMap.get(BubbleEvents.DOUBLE_CLICK);
+					if(doubleClick != null) {
+						if(bHit.getID() == doubleClickFirstClickID
+								&& doubleClickFirstDown + DOUBLE_TAP_INTERVAL >= System
+										.currentTimeMillis()) {
+							doubleClick.onGestureDetected(bHit, event);
+
+							doubleClickFirstDown = 0;
+							doubleClickFirstClickID = -1;
+						} else {
+							doubleClickFirstDown = System.currentTimeMillis();
+							doubleClickFirstClickID = bHit.getID();
+						}
+					}
 					if(singleTouch != null) {
 						SimpleTouchGesture<Bubble> gesture = new SimpleTouchGesture<Bubble>(singleTouch);
 						gesture.onTouchDown(bHit, event);

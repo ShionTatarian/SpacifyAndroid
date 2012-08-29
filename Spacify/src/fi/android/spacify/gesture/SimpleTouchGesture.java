@@ -11,7 +11,7 @@ public class SimpleTouchGesture<T> extends SimpleGesture<T> {
 
 	private final int DEFAULT_TOUCH_DELAY = 300; 
 	
-	private long touchDown;
+	private long touchDown = 0, touchUp = 0;
 	private int touchDelay = DEFAULT_TOUCH_DELAY;
 	protected WeakReference<T> weakObject;
 	protected WeakReference<GestureInterface<T>> weakInterface;
@@ -61,4 +61,6 @@ public class SimpleTouchGesture<T> extends SimpleGesture<T> {
 			}
 		}
 	}
+	
+	
 }
