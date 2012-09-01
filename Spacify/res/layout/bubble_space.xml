@@ -9,38 +9,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:weightSum="2" >
+
+        <ViewFlipper
+            android:id="@+id/bubblespace_viewflipper"
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="gone" />
+    </LinearLayout>
+
     <FrameLayout
         android:id="@+id/popup_controls"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" >
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/popup_container_1"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" >
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/popup_container_2"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" >
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/popup_container_3"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" >
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/popup_container_4"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" >
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/popup_container_5"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent" >
     </FrameLayout>

@@ -11,8 +11,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.RelativeLayout;
-import android.widget.RelativeLayout.LayoutParams;
+import android.widget.ViewFlipper;
 import fi.android.spacify.R;
 import fi.android.spacify.activity.BaseActivity;
 import fi.android.spacify.gesture.GestureInterface;
@@ -36,9 +35,8 @@ public class BubbleSpaceActivity extends BaseActivity {
 
 	private BubbleSurface bSurface;
 	private PopupControlFragment controlPopup;
-	private final Integer[] popupIDs = { R.id.popup_container_1, R.id.popup_container_2,
-			R.id.popup_container_3, R.id.popup_container_4, R.id.popup_container_5 };
-	private int popup = 0;
+	private ViewFlipper viewFlipper;
+
 	private final Stack<Fragment> visibleFragments = new Stack<Fragment>();
 	
 	@Override
@@ -49,6 +47,7 @@ public class BubbleSpaceActivity extends BaseActivity {
 
 		setContentView(R.layout.bubble_space);
 		
+		viewFlipper = (ViewFlipper) findViewById(R.id.bubblespace_viewflipper);
 		bSurface = (BubbleSurface) findViewById(R.id.bubblespace_surface);
 		bSurface.setGesture(BubbleEvents.LONG_CLICK, longClick);
 		bSurface.setGesture(BubbleEvents.DOUBLE_CLICK, openBubblePopup);
@@ -66,22 +65,8 @@ public class BubbleSpaceActivity extends BaseActivity {
 
 				BaseBubblePopupFragment bubblePopup = new BaseBubblePopupFragment();
 				bubblePopup.setBubble(b);
-				RelativeLayout.LayoutParams params = (LayoutParams) findViewById(popupIDs[popup])
-						.getLayoutParams();
-				params.topMargin = (int) (getResources().getDimension(R.dimen.margin_huge) * (popup + 1));
 
-				FragmentManager fm = getSupportFragmentManager();
-				FragmentTransaction ft = fm.beginTransaction();
-				ft.replace(popupIDs[popup], bubblePopup);
-				ft.commit();
-
-				visibleFragments.add(bubblePopup);
-
-				popup += 1;
-				if(popup >= popupIDs.length) {
-					findViewById(popupIDs[popup - 1]).bringToFront();
-					popup = 0;
-				}
+				// visibleFragments.add(bubblePopup);
 			}
 		}
 	};
@@ -100,6 +85,15 @@ public class BubbleSpaceActivity extends BaseActivity {
 				ft.commit();
 				
 				visibleFragments.add(controlPopup);
+			} else {
+				vibrator.vibrate(VIBRATION_TIME);
+
+				FragmentManager fm = getSupportFragmentManager();
+				FragmentTransaction ft = fm.beginTransaction();
+				ft.replace(R.id.popup_controls, controlPopup);
+				ft.commit();
+
+				visibleFragments.add(controlPopup);
 			}
 		}
 	};
@@ -110,9 +104,6 @@ public class BubbleSpaceActivity extends BaseActivity {
 			FragmentManager fm = getSupportFragmentManager();
 			FragmentTransaction ft = fm.beginTransaction();
 			Fragment f = visibleFragments.pop();
-			if(f instanceof BaseBubblePopupFragment) {
-				popup -= 1;
-			}
 			ft.remove(f);
 			ft.commit();
 		} else {

@@ -94,7 +94,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	private void startGraphics() {
-		if(graphicThread == null) {
+		if (graphicThread == null) {
 			graphicThread = new GraphicThread(getHolder(), this);
 			graphicThread.setRunning(true);
 			graphicThread.start();
@@ -102,7 +102,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	private void startMovement() {
-		if(movementThread == null) {
+		if (movementThread == null) {
 			movementThread = new MovementThread();
 			movementThread.setRunning(true);
 			movementThread.start();
@@ -131,14 +131,14 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	private void stopGraphics() {
-		if(graphicThread != null) {
+		if (graphicThread != null) {
 			graphicThread.setRunning(false);
 			graphicThread = null;
 		}
 	}
 
 	private void stopMovement() {
-		if(movementThread != null) {
+		if (movementThread != null) {
 			movementThread.setRunning(false);
 			movementThread = null;
 		}
@@ -160,9 +160,9 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 		@Override
 		public void run() {
-			while(run) {
+			while (run) {
 				long pulse = System.currentTimeMillis();
-				if(lastUpdate != 0 && lastUpdate + THREAD_KILL_DELAY < System.currentTimeMillis()) {
+				if (lastUpdate != 0 && lastUpdate + THREAD_KILL_DELAY < System.currentTimeMillis()) {
 					stopMovement();
 				}
 
@@ -193,23 +193,23 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		@Override
 		public void run() {
 			Canvas c;
-			while(run) {
+			while (run) {
 				c = null;
 				try {
-					if(lastUpdate + MAX_REFRESH_RATE <= System.currentTimeMillis()) {
-						if(holder != null) {
+					if (lastUpdate + MAX_REFRESH_RATE <= System.currentTimeMillis()) {
+						if (holder != null) {
 							c = holder.lockCanvas(null);
-							if(c != null && surface != null) {
+							if (c != null && surface != null) {
 								surface.onDraw(c);
 								lastUpdate = System.currentTimeMillis();
 							}
 						}
 					}
-				} catch(Exception e) {
+				} catch (Exception e) {
 					Log.e(TAG, "Error drawing!", e);
 				} finally {
 					// make sure to always release canvas
-					if(c != null && holder != null) {
+					if (c != null && holder != null) {
 						holder.unlockCanvasAndPost(c);
 					}
 				}
@@ -246,7 +246,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		if(callback != null) {
+		if (callback != null) {
 			callback.onSurfaceTouch(event);
 		}
 		int pointerIndex = ((event.getAction() & MotionEvent.ACTION_POINTER_ID_MASK) >> MotionEvent.ACTION_POINTER_ID_SHIFT);
@@ -257,106 +257,105 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		int y = (int) event.getY(pointerIndex);
 
 		switch (action) {
-			case MotionEvent.ACTION_DOWN:
-			case MotionEvent.ACTION_POINTER_DOWN:
-				if(longClickGesture != null) {
-					longClickGesture.cancel();
-					longClickGesture = null;
+		case MotionEvent.ACTION_DOWN:
+		case MotionEvent.ACTION_POINTER_DOWN:
+			if (longClickGesture != null) {
+				longClickGesture.cancel();
+				longClickGesture = null;
+			}
+
+			Bubble bHit = hitBubble((int) event.getX(pointerIndex), (int) event.getY(pointerIndex));
+			GestureInterface<Bubble> longClick = gestureMap.get(BubbleEvents.LONG_CLICK);
+			if (bHit != null) {
+				GestureInterface<Bubble> singleTouch = gestureMap.get(BubbleEvents.SINGLE_TOUCH);
+				GestureInterface<Bubble> doubleClick = gestureMap.get(BubbleEvents.DOUBLE_CLICK);
+				if (doubleClick != null) {
+					if (bHit.getID() == doubleClickFirstClickID
+							&& doubleClickFirstDown + DOUBLE_TAP_INTERVAL >= System.currentTimeMillis()) {
+						doubleClick.onGestureDetected(bHit, event);
+
+						doubleClickFirstDown = 0;
+						doubleClickFirstClickID = -1;
+					} else {
+						doubleClickFirstDown = System.currentTimeMillis();
+						doubleClickFirstClickID = bHit.getID();
+					}
+				}
+				if (singleTouch != null) {
+					SimpleTouchGesture<Bubble> gesture = new SimpleTouchGesture<Bubble>(singleTouch);
+					gesture.onTouchDown(bHit, event);
+					gestureList.put(pointerIndex, gesture);
+				}
+				bHit.movement = BubbleMovement.MOVING;
+
+				synchronized (movingBubbles) {
+					movingBubbles.put(pointerIndex, bHit);
+				}
+			} else {
+				// Bubble b = new Bubble(id);
+				// id += 1;
+				// b.x = x;
+				// b.y = y;
+				//
+				// bubbles.add(b);
+			}
+			if (longClick != null) {
+				longClickGesture = new LongClickGesture<Bubble>(longClick);
+				longClickGesture.onTouchDown(bHit, event);
+			}
+			break;
+		case MotionEvent.ACTION_MOVE:
+			synchronized (movingBubbles) {
+				for (Integer key : movingBubbles.keySet()) {
+					Bubble b = movingBubbles.get(key);
+					if (b != null && key < event.getPointerCount()) {
+						b.x = (int) event.getX(key);
+						b.y = (int) event.getY(key);
+
+						if (longClickGesture != null) {
+							longClickGesture.onMove(b, event);
+						}
+
+						moving(b);
+					}
+				}
+			}
+
+			break;
+		case MotionEvent.ACTION_UP:
+		case MotionEvent.ACTION_POINTER_UP:
+			if (longClickGesture != null) {
+				longClickGesture.cancel();
+			}
+
+			final SimpleTouchGesture<Bubble> gesture = gestureList.remove(pointerIndex);
+			final Bubble b;
+			synchronized (movingBubbles) {
+				b = movingBubbles.remove(pointerIndex);
+			}
+			if (b != null) {
+				if (gesture != null) {
+					gesture.onTouchUp(b, event);
+				}
+				b.movement = BubbleMovement.INERT;
+			}
+
+			if (event.getPointerCount() == 1) {
+				synchronized (movingBubbles) {
+					movingBubbles.clear();
 				}
 
-				Bubble bHit = hitBubble((int) event.getX(pointerIndex), (int) event.getY(pointerIndex));
-				if(bHit != null) {
-					GestureInterface<Bubble> singleTouch = gestureMap.get(BubbleEvents.SINGLE_TOUCH);
-					GestureInterface<Bubble> longClick = gestureMap.get(BubbleEvents.LONG_CLICK);
-					GestureInterface<Bubble> doubleClick = gestureMap.get(BubbleEvents.DOUBLE_CLICK);
-					if(doubleClick != null) {
-						if(bHit.getID() == doubleClickFirstClickID
-								&& doubleClickFirstDown + DOUBLE_TAP_INTERVAL >= System
-										.currentTimeMillis()) {
-							doubleClick.onGestureDetected(bHit, event);
+				ws.postWork(new Runnable() {
 
-							doubleClickFirstDown = 0;
-							doubleClickFirstClickID = -1;
-						} else {
-							doubleClickFirstDown = System.currentTimeMillis();
-							doubleClickFirstClickID = bHit.getID();
+					@Override
+					public void run() {
+						for (Bubble b : bubbles) {
+							b.movement = BubbleMovement.INERT;
 						}
 					}
-					if(singleTouch != null) {
-						SimpleTouchGesture<Bubble> gesture = new SimpleTouchGesture<Bubble>(singleTouch);
-						gesture.onTouchDown(bHit, event);
-						gestureList.put(pointerIndex, gesture);
-					}
-					if(longClick != null) {
-						longClickGesture = new LongClickGesture<Bubble>(longClick);
-						longClickGesture.onTouchDown(bHit, event);
-					}
-					bHit.movement = BubbleMovement.MOVING;
-
-					synchronized(movingBubbles) {
-						movingBubbles.put(pointerIndex, bHit);
-					}
-				} else {
-					// Bubble b = new Bubble(id);
-					// id += 1;
-					// b.x = x;
-					// b.y = y;
-					//
-					// bubbles.add(b);
-				}
-				break;
-			case MotionEvent.ACTION_MOVE:
-				synchronized(movingBubbles) {
-					for(Integer key : movingBubbles.keySet()) {
-						Bubble b = movingBubbles.get(key);
-						if(b != null && key < event.getPointerCount()) {
-							b.x = (int) event.getX(key);
-							b.y = (int) event.getY(key);
-
-							if(longClickGesture != null) {
-								longClickGesture.onMove(b, event);
-							}
-
-							moving(b);
-						}
-					}
-				}
-
-				break;
-			case MotionEvent.ACTION_UP:
-			case MotionEvent.ACTION_POINTER_UP:
-				if(longClickGesture != null) {
-					longClickGesture.cancel();
-				}
-
-				final SimpleTouchGesture<Bubble> gesture = gestureList.remove(pointerIndex);
-				final Bubble b;
-				synchronized(movingBubbles) {
-					b = movingBubbles.remove(pointerIndex);
-				}
-				if(b != null) {
-					if(gesture != null) {
-						gesture.onTouchUp(b, event);
-					}
-					b.movement = BubbleMovement.INERT;
-				}
-
-				if(event.getPointerCount() == 1) {
-					synchronized(movingBubbles) {
-						movingBubbles.clear();
-					}
-
-					ws.postWork(new Runnable() {
-
-						@Override
-						public void run() {
-							for(Bubble b : bubbles) {
-								b.movement = BubbleMovement.INERT;
-							}
-						}
-					});
-				}
-				break;
+				});
+			}
+			break;
 		}
 
 		return true;
@@ -367,8 +366,8 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 			@Override
 			public void run() {
-				for(Bubble b : bubbles) {
-					if(b.movement != BubbleMovement.MOVING && isCollision(bubble, b)) {
+				for (Bubble b : bubbles) {
+					if (b.movement != BubbleMovement.MOVING && isCollision(bubble, b)) {
 						autoMove(bubble, b);
 					}
 				}
@@ -379,59 +378,60 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	private void autoMove(Bubble moving, Bubble pushed) {
 		double distance = distance(moving, pushed);
 
-		if(distance == 0 || moving.movement == BubbleMovement.INERT
+		if (distance == 0 || moving.movement == BubbleMovement.INERT
 				|| (moving.movement == BubbleMovement.MOVING && pushed.movement == BubbleMovement.MOVING)) {
 			return;
 		}
 		double dx = moving.x - pushed.x;
 		double dy = moving.y - pushed.y;
-		
+
 		float radius = pushed.radius > moving.radius ? pushed.radius : moving.radius;
 
-//		Log.w(TAG, "mx: " + moving.x + " my: " + moving.y + " dx: " + dx + " dy: " + dy);
-//		Log.w(TAG, "x: " + pushed.x + " y: " + pushed.y + " distance: " + distance + " radius: " + radius);
+		// Log.w(TAG, "mx: " + moving.x + " my: " + moving.y + " dx: " + dx +
+		// " dy: " + dy);
+		// Log.w(TAG, "x: " + pushed.x + " y: " + pushed.y + " distance: " +
+		// distance + " radius: " + radius);
 
 		double move = Math.abs(distance - radius);
 
 		double factor = 1;
-		if(dx > 0 && dy > 0) {
+		if (dx > 0 && dy > 0) {
 			factor = dx < dy ? Math.abs(dx / dy) : 1 - Math.abs(dy / dx);
-		} else if(dx > 0 && dy < 0) {
+		} else if (dx > 0 && dy < 0) {
 			factor = dx < Math.abs(dy) ? Math.abs(dx / dy) : 1 - Math.abs(dy / dx);
-		} else if(dx < 0 && dy > 0) {
+		} else if (dx < 0 && dy > 0) {
 			factor = Math.abs(dx) < dy ? Math.abs(dx / dy) : 1 - Math.abs(dy / dx);
 		} else {
 			factor = dx > dy ? Math.abs(dx / dy) : 1 - Math.abs(dy / dx);
 		}
-		
+
 		double rFactor = 1 - factor;
 		// Log.w(TAG, "x-factor: " + factor);
 
-		if(dx > 0) {
+		if (dx > 0) {
 			pushed.x -= move * factor;
-		} else if(dx < 0) {
+		} else if (dx < 0) {
 			pushed.x += move * factor;
 		}
 
 		factor = 1 - factor;
 		// Log.w(TAG, "y-factor: " + rFactor);
-		if(dy > 0) {
+		if (dy > 0) {
 			pushed.y -= move * rFactor;
-		} else if(dy < 0) {
+		} else if (dy < 0) {
 			pushed.y += move * rFactor;
 		}
 
-		
 		// Don't let it go over
-		if(pushed.x + pushed.radius > maxX) {
+		if (pushed.x + pushed.radius > maxX) {
 			pushed.x = (int) (maxX - pushed.radius);
-		} else if(pushed.x < minX) {
+		} else if (pushed.x < minX) {
 			pushed.x = minX + (int) pushed.radius;
 		}
 
-		if(pushed.y + pushed.radius > maxY) {
+		if (pushed.y + pushed.radius > maxY) {
 			pushed.y = (int) (maxY - pushed.radius);
-		} else if(pushed.y < minY) {
+		} else if (pushed.y < minY) {
 			pushed.y = minY + (int) pushed.radius;
 		}
 
@@ -441,9 +441,9 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	private Bubble hitBubble(int x, int y) {
-		for(int i = bubbles.size() - 1; i > -1; i--) {
+		for (int i = bubbles.size() - 1; i > -1; i--) {
 			Bubble b = bubbles.get(i);
-			if(distance(x, y, b.x, b.y) < b.radius) {
+			if (distance(x, y, b.x, b.y) < b.radius) {
 				return b;
 			}
 		}
