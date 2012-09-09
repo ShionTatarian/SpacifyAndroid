@@ -24,8 +24,6 @@ public class ControlAdapter extends ArrayAdapter<ControlAction> {
 			image = (ImageView) v.findViewById(R.id.popup_control_image);
 			name = (TextView) v.findViewById(R.id.popup_control_name);
 		}
-		
-		
 	}
 	
 	@Override
@@ -38,7 +36,7 @@ public class ControlAdapter extends ArrayAdapter<ControlAction> {
 		
 		ControlAction control = getItem(position);
 		
-		holder.name.setText(control.getName());
+		holder.name.setText(control.getNameResource());
 		
 		return convertView;
 	}

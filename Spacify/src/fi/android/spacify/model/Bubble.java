@@ -7,11 +7,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.database.Cursor;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.util.Log;
+import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
 
 public class Bubble {
 
@@ -40,7 +42,7 @@ public class Bubble {
 	private static final int TEXT_SIZE = 20;
 	
 	public int movement = BubbleMovement.INERT;
-	public int x, y;
+	public int x = 0, y = 0;
 	public float radius = 30;
 	public Paint bubblePaint, titlePaint;
 
@@ -48,19 +50,27 @@ public class Bubble {
 	private String debugID = "", type = "", style = "", title = "", contents = "",
 			titleImageUrl = "", contentImageUrl = "";
 	private List<Integer> links = new ArrayList<Integer>();
+	private long latitude = 0, longitude = 0;
 
-	public Bubble(int id) {
-		this.id = id;
-
+	private void init() {
 		int red = (int) (Math.random() * 255);
 		int green = (int) (Math.random() * 255);
 		int blue = (int) (Math.random() * 255);
+		bubblePaint = new Paint();
 		bubblePaint.setColor(Color.rgb(red, green, blue));
+		bubblePaint.setAntiAlias(true);
 
 		titlePaint = new Paint();
 		titlePaint.setColor(Color.WHITE);
 		titlePaint.setStyle(Style.FILL);
 		titlePaint.setTextSize(TEXT_SIZE);
+
+		radius = (float) (radius + (priority * SIZE_FACTOR));
+	}
+
+	public Bubble(int id) {
+		this.id = id;
+		init();
 	}
 
 	public Bubble(JSONObject json) {
@@ -70,8 +80,6 @@ public class Bubble {
 			}
 			if(json.has(BubbleJSON.priority)) {
 				this.priority = json.getInt(BubbleJSON.priority);
-				
-				radius = (float) (radius + (priority * SIZE_FACTOR));
 			}
 			if(json.has(BubbleJSON.contents)) {
 				this.contents = json.getString(BubbleJSON.contents);
@@ -93,24 +101,36 @@ public class Bubble {
 			}
 			if(json.has(BubbleJSON.links)) {
 				JSONArray jArray = json.getJSONArray(BubbleJSON.links);
-				for(int i = 0; i < jArray.length(); i++) {
-					links.add(jArray.getInt(i));
-				}
+				parseJsonLinks(jArray);
 			}
 		} catch(JSONException e) {
 			Log.w(TAG, "Error parsing JSON", e);
 		}
 
-		int red = (int) (Math.random() * 255);
-		int green = (int) (Math.random() * 255);
-		int blue = (int) (Math.random() * 255);
-		bubblePaint = new Paint();
-		bubblePaint.setColor(Color.rgb(red, green, blue));
+		init();
+	}
 
-		titlePaint = new Paint();
-		titlePaint.setColor(Color.WHITE);
-		titlePaint.setStyle(Style.FILL);
-		titlePaint.setTextSize(TEXT_SIZE);
+	public Bubble(Cursor c) {
+		id = c.getInt(c.getColumnIndex(BubbleColumns.ID));
+		title = c.getString(c.getColumnIndex(BubbleColumns.TITLE));
+		style = c.getString(c.getColumnIndex(BubbleColumns.STYLE));
+		contents = c.getString(c.getColumnIndex(BubbleColumns.CONTENTS));
+		priority = c.getInt(c.getColumnIndex(BubbleColumns.PRIORITY));
+		titleImageUrl = c.getString(c.getColumnIndex(BubbleColumns.TITLE_IMAGE_URL));
+		try {
+			parseJsonLinks(new JSONArray(c.getString((c.getColumnIndex(BubbleColumns.LINKS)))));
+		} catch(JSONException e) {
+			e.printStackTrace();
+		}
+		type = c.getString(c.getColumnIndex(BubbleColumns.TYPE));
+		debugID = c.getString(c.getColumnIndex(BubbleColumns.DEBUG_ID));
+		contentImageUrl = c.getString(c.getColumnIndex(BubbleColumns.CONTENT_IMAGE_URL));
+		latitude = c.getLong(c.getColumnIndex(BubbleColumns.LATITUDE));
+		longitude = c.getLong(c.getColumnIndex(BubbleColumns.LONGITUDE));
+		x = c.getInt(c.getColumnIndex(BubbleColumns.X));
+		y = c.getInt(c.getColumnIndex(BubbleColumns.Y));
+		
+		init();
 	}
 
 	@Override
@@ -144,7 +164,7 @@ public class Bubble {
 	 * 
 	 * @return String content of this Bubble.
 	 */
-	public String getContent() {
+	public String getContents() {
 		return contents;
 	}
 
@@ -155,6 +175,108 @@ public class Bubble {
 			canvas.drawText(title, x - radius, y, titlePaint);
 		}
 		
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public int getPriority() {
+		return priority;
+	}
+
+	public void setPriority(int priority) {
+		this.priority = priority;
+	}
+
+	public String getDebugID() {
+		return debugID;
+	}
+
+	public void setDebugID(String debugID) {
+		this.debugID = debugID;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String getStyle() {
+		return style;
+	}
+
+	public void setStyle(String style) {
+		this.style = style;
+	}
+
+	public String getTitleImageUrl() {
+		return titleImageUrl;
+	}
+
+	public void setTitleImageUrl(String titleImageUrl) {
+		this.titleImageUrl = titleImageUrl;
+	}
+
+	public String getContentImageUrl() {
+		return contentImageUrl;
+	}
+
+	public void setContentImageUrl(String contentImageUrl) {
+		this.contentImageUrl = contentImageUrl;
+	}
+
+	public List<Integer> getLinks() {
+		return links;
+	}
+
+	public void setLinks(List<Integer> links) {
+		this.links = links;
+	}
+
+	public JSONArray getLinksJSONArray() {
+		JSONArray jArray = new JSONArray();
+		for(int link : links) {
+			jArray.put(link);
+		}
+		return jArray;
+	}
+
+	public void parseJsonLinks(JSONArray jArray) {
+		for(int i = 0; i < jArray.length(); i++) {
+			try {
+				links.add(jArray.getInt(i));
+			} catch(JSONException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public long getLattitude() {
+		return latitude;
+	}
+
+	public void setLattitude(long lattitude) {
+		this.latitude = lattitude;
+	}
+
+	public long getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(long longitude) {
+		this.longitude = longitude;
+	}
+
+	public int offsetX = 0;
+	public int offsetY = 0;
+
+	public void setTouchOffset(int tX, int tY) {
+		offsetX = x - tX;
+		offsetY = y - tY;
 	}
 
 }

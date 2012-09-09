@@ -54,7 +54,9 @@ public class SimpleTouchGesture<T> extends SimpleGesture<T> {
 	@Override
 	public void onTouchUp(T object, MotionEvent event) {
 		T tapDownObject = weakObject.get();
-		if(tapDownObject != null && System.currentTimeMillis() < touchDown+touchDelay && object.equals(tapDownObject)) {
+		if(tapDownObject == null
+				|| (tapDownObject != null && System.currentTimeMillis() < touchDown + touchDelay && object
+						.equals(tapDownObject))) {
 			GestureInterface gIf = weakInterface.get();
 			if(gIf != null) {
 				gIf.onGestureDetected(object, event);

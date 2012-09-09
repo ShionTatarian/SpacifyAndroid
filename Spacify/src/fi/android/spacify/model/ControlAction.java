@@ -15,14 +15,14 @@ public class ControlAction {
 		// TODO Auto-generated constructor stub
 	}
 	
-	private String name;
+	private int name;
 
 	/**
 	 * Get ControlAction name
 	 * 
 	 * @return
 	 */
-	public String getName() {
+	public int getNameResource() {
 		return name;
 	}
 
@@ -31,7 +31,7 @@ public class ControlAction {
 	 * 
 	 * @param name
 	 */
-	public void setName(String name) {
+	public void setNameResource(int name) {
 		this.name = name;
 	}
 	

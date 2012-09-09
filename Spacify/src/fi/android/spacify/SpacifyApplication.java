@@ -3,6 +3,7 @@ package fi.android.spacify;
 import android.app.Application;
 import fi.android.service.WorkService;
 import fi.android.service.web.WebService;
+import fi.android.spacify.db.BubbleDatabase;
 import fi.android.spacify.service.ContentManagementService;
 
 /**
@@ -17,6 +18,7 @@ public class SpacifyApplication extends Application {
 	public void onCreate() {
 		WorkService.init(5);
 		WebService.init(this);
+		BubbleDatabase.init(this);
 		ContentManagementService.init(this);
 		
 		super.onCreate();

@@ -6,6 +6,7 @@ import android.os.Message;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import fi.android.service.EventService;
+import fi.android.service.WorkService;
 
 /**
  * Base activity for all activities in Spacify application. Extends
@@ -18,6 +19,7 @@ public class BaseActivity extends FragmentActivity implements Callback {
 
 	private final String TAG = "BaseActivity";
 
+	protected final WorkService ws = WorkService.getInstance();
 	protected boolean onTop = false;
 	protected boolean started = false;
 

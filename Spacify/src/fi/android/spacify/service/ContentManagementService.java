@@ -9,11 +9,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.util.Log;
 import fi.android.service.web.WebJsonListener;
 import fi.android.service.web.WebService;
 import fi.android.service.web.WebServiceException;
 import fi.android.spacify.R;
+import fi.android.spacify.db.BubbleDatabase;
 import fi.android.spacify.model.Bubble;
 import fi.spacify.android.util.Events;
 import fi.spacify.android.util.WebPipes;
@@ -29,9 +31,9 @@ public class ContentManagementService extends BaseService {
 
 	private static final String TAG = "ContentManagementService";
 	private final WebService WEB = WebService.getInstance();
+	private final BubbleDatabase db = BubbleDatabase.getInstance();
 
 	private static ContentManagementService instance;
-	private List<Bubble> bubbles = new ArrayList<Bubble>();
 
 	private Context context;
 
@@ -77,6 +79,7 @@ public class ContentManagementService extends BaseService {
 		public void successResult(JSONObject json) {
 			Log.v(TAG, "Got bubbles: " + json);
 			
+			List<Bubble> bubbles = new ArrayList<Bubble>();
 			try {
 				JSONArray jArray = json.getJSONArray("add");
 
@@ -87,6 +90,7 @@ public class ContentManagementService extends BaseService {
 				e.printStackTrace();
 			}
 
+			db.storeBubbles(bubbles);
 			es.dispatchEvent(Events.ALL_BUBBLES_FETCHED.ordinal());
 		}
 
@@ -102,8 +106,18 @@ public class ContentManagementService extends BaseService {
 	 * 
 	 * @return List of Bubble objects.
 	 */
-	public List<Bubble> getBubbles() {
-		return new ArrayList<Bubble>(bubbles);
+	public List<Bubble> getTopLevelBubbles() {
+		Cursor c = db.getTopLevelBubblesCursor();
+		List<Bubble> bubbles = new ArrayList<Bubble>();
+		c.moveToFirst();
+		while(!c.isAfterLast()) {
+			bubbles.add(new Bubble(c));
+			c.moveToNext();
+		}
+		c.close();
+
+		return bubbles;
 	}
+
 
 }

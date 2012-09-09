@@ -9,18 +9,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <LinearLayout
+    <android.support.v4.view.ViewPager
+        android:id="@+id/bubblespace_viewflipper"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:weightSum="2" >
-
-        <ViewFlipper
-            android:id="@+id/bubblespace_viewflipper"
-            android:layout_width="fill_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:visibility="gone" />
-    </LinearLayout>
+        android:layout_height="200dp"
+        android:visibility="visible" />
 
     <FrameLayout
         android:id="@+id/popup_controls"
