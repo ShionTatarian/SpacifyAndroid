@@ -119,5 +119,18 @@ public class ContentManagementService extends BaseService {
 		return bubbles;
 	}
 
+	public List<Bubble> getBubbles(List<Integer> links) {
+		Cursor c = db.getLinkedBubblesCursor(links);
+		List<Bubble> bubbles = new ArrayList<Bubble>();
+		c.moveToFirst();
+		while(!c.isAfterLast()) {
+			bubbles.add(new Bubble(c));
+			c.moveToNext();
+		}
+		c.close();
+
+		return bubbles;
+
+	}
 
 }

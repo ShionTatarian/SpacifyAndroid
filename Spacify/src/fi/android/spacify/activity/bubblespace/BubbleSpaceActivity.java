@@ -82,6 +82,9 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 					if(position >= 0) {
 						popupPager.setCurrentItem(position);
 					}
+
+					bSurface.pushBubblesVertically((int) (getResources().getDimension(
+							R.dimen.popup_height) + b.radius));
 				}
 			}
 		}
@@ -92,7 +95,9 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 		@Override
 		public void onGestureDetected(Bubble b, MotionEvent ev) {
 			if(b != null) {
-
+				for(Bubble bubble : cms.getBubbles(b.getLinks())) {
+					bSurface.addBubble(bubble);
+				}
 			} else {
 				tryClosingPopups();
 			}

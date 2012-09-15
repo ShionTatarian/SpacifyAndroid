@@ -12,7 +12,8 @@
     <android.support.v4.view.ViewPager
         android:id="@+id/bubblespace_viewflipper"
         android:layout_width="fill_parent"
-        android:layout_height="200dp"
+        android:layout_height="@dimen/popup_height"
+        android:layout_margin="@dimen/margin_normal"
         android:visibility="visible" />
 
     <FrameLayout

@@ -2,18 +2,23 @@ package fi.android.spacify.view;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import fi.android.service.WorkService;
+import fi.android.spacify.R;
 import fi.android.spacify.gesture.GestureInterface;
 import fi.android.spacify.gesture.LongClickGesture;
 import fi.android.spacify.gesture.SimpleTouchGesture;
@@ -47,13 +52,15 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	private int maxY = 0;
 	private int minY = 0;
 
-	private List<Bubble> bubbles = new ArrayList<Bubble>();
+	private Map<Integer, Bubble> bubbles = new HashMap<Integer, Bubble>();
 	private final HashMap<Integer, Bubble> movingBubbles = new HashMap<Integer, Bubble>();
 
 	private boolean changingLists = false;
 	private boolean hitDetection = false;
 	private boolean drawing = false;
 	private boolean movementChange = false;
+	private Paint linePaint;
+	private Handler handler = new Handler();
 
 	/**
 	 * Events supported by BubbleSurface.
@@ -89,8 +96,15 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 		getHolder().addCallback(this);
 		getHolder().setFormat(PixelFormat.RGBA_8888);
+		
+		linePaint = new Paint();
+		linePaint.setAntiAlias(true);
+		linePaint.setColor(Color.RED);
+		linePaint.setStrokeWidth(context.getResources().getDimension(R.dimen.margin_half));
 
 	}
+
+	private List<Integer> drawnBubbles = new ArrayList<Integer>();
 
 	@Override
 	public void onDraw(Canvas canvas) {
@@ -102,9 +116,25 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 			return;
 		}
 		drawing = true;
-		for(Bubble b : bubbles) {
-			b.onDraw(canvas);
+
+		Iterator<Bubble> iterator = bubbles.values().iterator();
+		drawnBubbles.clear();
+		while(iterator.hasNext()) {
+			Bubble b1 = iterator.next();
+			if(!drawnBubbles.contains(b1.getID())) {
+				for(int id : b1.getLinks()) {
+					Bubble b2 = bubbles.get(id);
+					canvas.drawLine(b1.x, b1.y, b2.x, b2.y, linePaint);
+					b2.onDraw(canvas);
+					drawnBubbles.add(b2.getID());
+				}
+				b1.onDraw(canvas);
+				drawnBubbles.add(b1.getID());
+			}
 		}
+		// for(Bubble b : bubbles) {
+		// b.onDraw(canvas);
+		// }
 		drawing = false;
 	}
 
@@ -125,10 +155,12 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	private void startGraphics() {
+		handler.removeCallbacks(pauseDrawing);
 		if(graphicThread == null) {
 			graphicThread = new GraphicThread(getHolder(), this);
 			graphicThread.setRunning(true);
 			graphicThread.start();
+			Log.d(TAG, "Graphics started");
 		}
 	}
 
@@ -164,6 +196,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		if(graphicThread != null) {
 			graphicThread.setRunning(false);
 			graphicThread = null;
+			Log.d(TAG, "Graphics stopped");
 		}
 	}
 
@@ -240,6 +273,9 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	private long doubleClickFirstDown = 0;
 	private int doubleClickFirstClickID = -1;
+	private int zoomPointerIndex = -1;
+	private double firstZoomDistance = 0;
+	private Bubble zooming = null;
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
@@ -254,6 +290,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		switch (action) {
 			case MotionEvent.ACTION_DOWN:
 			case MotionEvent.ACTION_POINTER_DOWN:
+				startGraphics();
 				if(longClickGesture != null) {
 					longClickGesture.cancel();
 					longClickGesture = null;
@@ -292,6 +329,14 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 					// b.y = y;
 					//
 					// bubbles.add(b);
+					
+					if(event.getPointerCount() == 2) {
+						zoomPointerIndex = pointerIndex;
+					} else {
+						zoomPointerIndex = -1;
+						firstZoomDistance = 0;
+						zoomBack();
+					}
 				}
 				GestureInterface<Bubble> singleTouch = gestureMap.get(BubbleEvents.SINGLE_TOUCH);
 				if(singleTouch != null) {
@@ -317,6 +362,17 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 								longClickGesture.onMove(b, event);
 							}
 
+							if(zoomPointerIndex != -1 && movingBubbles.size() == 1) {
+								double d = distance(event.getX(key), event.getY(key),
+										event.getX(zoomPointerIndex), event.getY(zoomPointerIndex));
+								if(firstZoomDistance == 0) {
+									firstZoomDistance = d;
+									zooming = b;
+								} else {
+									b.zoom(d / firstZoomDistance);
+								}
+							}
+							
 							moving(b);
 						}
 					}
@@ -341,6 +397,12 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 					b.movement = BubbleMovement.INERT;
 				}
 
+				if(zoomPointerIndex != -1) {
+					zoomPointerIndex = -1;
+					firstZoomDistance = 0;
+					zoomBack();
+				}
+
 				if(event.getPointerCount() == 1) {
 					synchronized(movingBubbles) {
 						movingBubbles.clear();
@@ -354,17 +416,72 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 								return;
 							}
 							movementChange = true;
-							for(Bubble b : bubbles) {
+							for(Bubble b : bubbles.values()) {
 								b.movement = BubbleMovement.INERT;
 							}
 							movementChange = false;
 						}
 					});
+
+					handler.postDelayed(pauseDrawing, DRAW_PAUSE_DELAY);
 				}
 				break;
 		}
 
 		return true;
+	}
+
+	private final int DRAW_PAUSE_DELAY = 1000;
+
+	private Runnable pauseDrawing = new Runnable() {
+
+		@Override
+		public void run() {
+			stopGraphics();
+		}
+	};
+
+	private void zoomBack() {
+		if(zooming != null) {
+			zooming.endZoom();
+			zooming = null;
+		}
+
+		// if(zooming != null) {
+		// zooming.zoom(1);
+		// }
+		// zooming = null;
+	}
+
+	private final double ANIMATION_DURATION = 300;
+
+	public void pushBubblesVertically(final int to) {
+		ws.postWork(new Runnable() {
+
+			@Override
+			public void run() {
+				long start = System.currentTimeMillis();
+				int top = 0;
+				while(top < to) {
+					long pulse = System.currentTimeMillis() - start;
+
+					top = (int) (to * pulse / ANIMATION_DURATION);
+
+					for(Bubble b : bubbles.values()) {
+						if(b.y < top) {
+							b.y = top;
+						}
+					}
+				}
+			}
+		});
+	}
+
+	private double distance(float x, float y, float x2, float y2) {
+		float dx = (float) (Math.pow(x - x2, 2));
+		float dy = (float) (Math.pow(y - y2, 2));
+
+		return Math.sqrt(dx + dy);
 	}
 
 	private void moving(final Bubble bubble) {
@@ -375,7 +492,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 			@Override
 			public void run() {
-				for(Bubble b : bubbles) {
+				for(Bubble b : bubbles.values()) {
 					if(changingLists) {
 						return;
 					}
@@ -448,8 +565,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 			return null;
 		}
 		hitDetection = true;
-		for(int i = bubbles.size() - 1; i > -1; i--) {
-			Bubble b = bubbles.get(i);
+		for(Bubble b : bubbles.values()) {
 			if(distance(x, y, b.x, b.y) < b.radius) {
 				hitDetection = false;
 				return b;
@@ -478,11 +594,11 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 			@Override
 			public void run() {
 				changingLists = true;
-				List<Bubble> shorterList = new ArrayList<Bubble>();
+				Map<Integer, Bubble> shorterList = new HashMap<Integer, Bubble>();
 
-				for(Bubble b : bubbles) {
+				for(Bubble b : bubbles.values()) {
 					if(b.getID() != removed.getID()) {
-						shorterList.add(b);
+						shorterList.put(b.getID(), b);
 					}
 				}
 				
@@ -523,7 +639,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 				/*
 				 * Check that the bubble is not already in BubbleSpace.
 				 */
-				for(Bubble bub : bubbles) {
+				for(Bubble bub : bubbles.values()) {
 					if(bub.getID() == b.getID()) {
 						return;
 					}
@@ -539,7 +655,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 					}
 				}
 
-				bubbles.add(b);
+				bubbles.put(b.getID(), b);
 			}
 		});
 	}

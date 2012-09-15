@@ -39,10 +39,11 @@ public class Bubble {
 	}
 
 	public static final double SPEED = 0.3, SIZE_FACTOR = 10;
-	private static final int TEXT_SIZE = 20;
+	private final int ZOOM_CAP = 3;
 	
 	public int movement = BubbleMovement.INERT;
 	public int x = 0, y = 0;
+	private float originalRadius = 30;
 	public float radius = 30;
 	public Paint bubblePaint, titlePaint;
 
@@ -60,12 +61,12 @@ public class Bubble {
 		bubblePaint.setColor(Color.rgb(red, green, blue));
 		bubblePaint.setAntiAlias(true);
 
+		originalRadius = radius = (float) (radius + (priority * SIZE_FACTOR));
 		titlePaint = new Paint();
 		titlePaint.setColor(Color.WHITE);
 		titlePaint.setStyle(Style.FILL);
-		titlePaint.setTextSize(TEXT_SIZE);
+		titlePaint.setTextSize(getTextSize());
 
-		radius = (float) (radius + (priority * SIZE_FACTOR));
 	}
 
 	public Bubble(int id) {
@@ -168,13 +169,86 @@ public class Bubble {
 		return contents;
 	}
 
-	public void onDraw(Canvas canvas) {
-		canvas.drawCircle(x, y, radius, bubblePaint);
-		
-		if(title != null) {
-			canvas.drawText(title, x - radius, y, titlePaint);
+	/**
+	 * Zoom bubble in or out.
+	 * 
+	 * @param d
+	 */
+	public void zoom(double d) {
+		if(d > ZOOM_CAP) {
+			// cap zoom at ZOOM_CAP
+			return;
 		}
-		
+		if(d < 0.5) {
+			return;
+		}
+
+		radius = (float) (originalRadius * d);
+
+		titlePaint.setTextSize(getTextSize());
+
+		titleSplit.clear();
+	}
+
+	/**
+	 * Sets the current size as the default size.
+	 */
+	public void endZoom() {
+		originalRadius = radius;
+	}
+
+	private float getTextSize() {
+		return(radius / 2.25f);
+	}
+
+	private int textFactor = 0;
+	private List<String> titleSplit = new ArrayList<String>();
+
+	private void calculateTextSizes() {
+		textFactor = (int) (radius / Math.sqrt(2));
+
+		float[] charWidths = new float[title.length()];
+		titlePaint.getTextWidths(title, charWidths);
+
+		String line = "";
+		float total = 0;
+		for(int i=0; i<title.length(); i++) {
+			char c = title.charAt(i);
+			if(total + charWidths[i] < textFactor * 2) {
+				total += charWidths[i];
+				line += c;
+			} else {
+				titleSplit.add(line);
+				total = charWidths[i];
+				line = "" + c;
+			}
+		}
+
+		if(line.length() > 0) {
+			titleSplit.add(line);
+		}
+	}
+
+	public void onDraw(Canvas canvas) {
+		if(titleSplit.size() == 0) {
+			calculateTextSizes();
+		}
+
+		canvas.drawCircle(x, y, radius, bubblePaint);
+
+		if(title != null) {
+			int i = 0;
+			for(String line : titleSplit) {
+				int dx = x - textFactor;
+				int dy = (int) ((y - (textFactor / 2)) + (i * getTextSize()));
+				canvas.drawText(line, dx, dy, titlePaint);
+				i += 1;
+
+				if(i * getTextSize() >= textFactor * 2) {
+					break;
+				}
+			}
+		}
 	}
 
 	public String getTitle() {

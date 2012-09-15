@@ -163,7 +163,23 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 	public Cursor getTopLevelBubblesCursor() {
 		SQLiteDatabase db = getReadableDatabase();
 		String selection = "";
-		selection = BubbleColumns.LINKS + " LENGTH > 2";
+		// selection = BubbleColumns.LINKS + " LENGTH > 2";
+		
+		return db.query(BUBBLE_TABLE, null, selection, null, null, null,
+				BubbleColumns.TITLE);
+	}
+
+	public Cursor getLinkedBubblesCursor(List<Integer> links) {
+		SQLiteDatabase db = getReadableDatabase();
+		
+		String separator = "";
+		String linkString = "";
+		for(Integer i : links) {
+			linkString += separator + i;
+			separator = ", ";
+		}
+		
+		String selection = BubbleColumns.ID + " IN (" + linkString + ")";
 		
 		return db.query(BUBBLE_TABLE, null, selection, null, null, null,
 				BubbleColumns.TITLE);
