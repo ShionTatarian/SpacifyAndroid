@@ -124,9 +124,13 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 			if(!drawnBubbles.contains(b1.getID())) {
 				for(int id : b1.getLinks()) {
 					Bubble b2 = bubbles.get(id);
-					canvas.drawLine(b1.x, b1.y, b2.x, b2.y, linePaint);
-					b2.onDraw(canvas);
-					drawnBubbles.add(b2.getID());
+					if(b2 != null) {
+						if(b1 != null) {
+							canvas.drawLine(b1.x, b1.y, b2.x, b2.y, linePaint);
+						}
+						b2.onDraw(canvas);
+						drawnBubbles.add(b2.getID());
+					}
 				}
 				b1.onDraw(canvas);
 				drawnBubbles.add(b1.getID());
@@ -233,6 +237,10 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 								surface.onDraw(c);
 								lastUpdate = System.currentTimeMillis();
 							}
+						}
+					} else {
+						synchronized(this) {
+							sleep(10);
 						}
 					}
 				} catch(Exception e) {
@@ -455,6 +463,11 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	private final double ANIMATION_DURATION = 300;
 
+	/**
+	 * Moves all bubbles down.
+	 * 
+	 * @param to
+	 */
 	public void pushBubblesVertically(final int to) {
 		ws.postWork(new Runnable() {
 
@@ -589,22 +602,24 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	 *            Bubble to be removed
 	 */
 	public void removeBubble(final Bubble removed) {
+		removeBubble(removed.getID());
+	}
+
+	/**
+	 * Inform BubbleSurface that this Bubble should be removed.
+	 * 
+	 * @param removed
+	 *            Bubble to be removed
+	 */
+	public void removeBubble(final int removed) {
 		ws.postWork(new Runnable() {
-			
+
 			@Override
 			public void run() {
 				changingLists = true;
-				Map<Integer, Bubble> shorterList = new HashMap<Integer, Bubble>();
-
-				for(Bubble b : bubbles.values()) {
-					if(b.getID() != removed.getID()) {
-						shorterList.put(b.getID(), b);
-					}
-				}
-				
 				while(changingLists) {
 					if(!hitDetection && !drawing && !movementChange) {
-						bubbles = shorterList;
+						bubbles.remove(removed);
 						changingLists = false;
 					} else {
 						synchronized(this) {
@@ -616,11 +631,9 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 						}
 					}
 				}
+				startGraphics();
 			}
 		});
-		
-		
-
 	}
 
 	/**
@@ -633,16 +646,19 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 			@Override
 			public void run() {
-				b.x = (int) (maxX * Math.random());
-				b.y = (int) (maxY * Math.random());
+				if(maxX != 0 || maxY != 0) {
+					b.x = (int) (maxX * Math.random());
+					b.y = (int) (maxY * Math.random());
+				} else {
+					b.x = (int) (400 * Math.random());
+					b.y = (int) (400 * Math.random());
+				}
 
 				/*
 				 * Check that the bubble is not already in BubbleSpace.
 				 */
-				for(Bubble bub : bubbles.values()) {
-					if(bub.getID() == b.getID()) {
-						return;
-					}
+				if(bubbles.containsKey(b.getID())) {
+					return;
 				}
 
 				while(changingLists) {
@@ -669,6 +685,25 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	private double distance(Bubble b1, Bubble b2) {
 		return distance(b1.x, b1.y, b2.x, b2.y);
+	}
+
+	public boolean hasChildsVisible(Bubble b) {
+		for(int id : b.getLinks()) {
+			Bubble child = bubbles.get(id);
+			if(child != null && child.getPriority() <= b.getPriority()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void removeChildren(Bubble b) {
+		for(int id : b.getLinks()) {
+			Bubble child = bubbles.get(id);
+			if(child != null && child.getPriority() <= b.getPriority()) {
+				removeBubble(id);
+			}
+		}
 	}
 
 }

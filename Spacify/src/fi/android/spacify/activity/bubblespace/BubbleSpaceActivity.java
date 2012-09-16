@@ -1,9 +1,10 @@
 package fi.android.spacify.activity.bubblespace;
 
-import java.util.List;
 import java.util.Stack;
 
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Message;
 import android.os.Vibrator;
@@ -67,24 +68,31 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 		@Override
 		public void onGestureDetected(Bubble b, MotionEvent ev) {
 			if(b != null) {
-				BaseBubblePopupFragment bubblePopup = new BaseBubblePopupFragment();
-				bubblePopup.setBubble(b);
+				if(b.getStyle().contains("web")) {
+					Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(b
+							.getContentImageUrl()));
+					startActivity(browserIntent);
 
-				// visibleFragments.add(bubblePopup);
-				if(popupAdapter.addPopup(bubblePopup)) {
-					vibrator.vibrate(VIBRATION_TIME);
-					popupAdapter.notifyDataSetChanged();
-					popupPager.setVisibility(View.VISIBLE);
-					popupPager.bringToFront();
-					popupPager.clearDisappearingChildren();
+				} else {
+					BaseBubblePopupFragment bubblePopup = new BaseBubblePopupFragment();
+					bubblePopup.setBubble(b);
 
-					int position = popupAdapter.getCount() - 1;
-					if(position >= 0) {
-						popupPager.setCurrentItem(position);
+					// visibleFragments.add(bubblePopup);
+					if(popupAdapter.addPopup(bubblePopup)) {
+						vibrator.vibrate(VIBRATION_TIME);
+						popupAdapter.notifyDataSetChanged();
+						popupPager.setVisibility(View.VISIBLE);
+						popupPager.bringToFront();
+						popupPager.clearDisappearingChildren();
+
+						int position = popupAdapter.getCount() - 1;
+						if(position >= 0) {
+							popupPager.setCurrentItem(position);
+						}
+
+						bSurface.pushBubblesVertically((int) (getResources().getDimension(
+								R.dimen.popup_height) + b.radius));
 					}
-
-					bSurface.pushBubblesVertically((int) (getResources().getDimension(
-							R.dimen.popup_height) + b.radius));
 				}
 			}
 		}
@@ -95,8 +103,12 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 		@Override
 		public void onGestureDetected(Bubble b, MotionEvent ev) {
 			if(b != null) {
-				for(Bubble bubble : cms.getBubbles(b.getLinks())) {
-					bSurface.addBubble(bubble);
+				if(bSurface.hasChildsVisible(b)) {
+					bSurface.removeChildren(b);
+				} else {
+					for(Bubble bubble : cms.getBubbles(b.getLinks())) {
+						bSurface.addBubble(bubble);
+					}
 				}
 			} else {
 				tryClosingPopups();
@@ -166,8 +178,7 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 			@Override
 			public void run() {
 				synchronized(BubbleSpaceActivity.this) {
-					List<Bubble> bubbles = cms.getTopLevelBubbles();
-					for(Bubble b : bubbles) {
+					for(Bubble b : cms.getTopLevelBubbles()) {
 						bSurface.addBubble(b);
 					}
 				}
@@ -180,6 +191,7 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 
 
 		switch (Events.values()[msg.what]) {
+			case COMICS_UPDATED:
 			case ALL_BUBBLES_FETCHED:
 				updateBubbles();
 				return true;

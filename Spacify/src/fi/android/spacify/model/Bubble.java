@@ -128,8 +128,8 @@ public class Bubble {
 		contentImageUrl = c.getString(c.getColumnIndex(BubbleColumns.CONTENT_IMAGE_URL));
 		latitude = c.getLong(c.getColumnIndex(BubbleColumns.LATITUDE));
 		longitude = c.getLong(c.getColumnIndex(BubbleColumns.LONGITUDE));
-		x = c.getInt(c.getColumnIndex(BubbleColumns.X));
-		y = c.getInt(c.getColumnIndex(BubbleColumns.Y));
+		// x = c.getInt(c.getColumnIndex(BubbleColumns.X));
+		// y = c.getInt(c.getColumnIndex(BubbleColumns.Y));
 		
 		init();
 	}
@@ -169,6 +169,10 @@ public class Bubble {
 		return contents;
 	}
 
+	public void setContents(String content) {
+		this.contents = content;
+	}
+
 	/**
 	 * Zoom bubble in or out.
 	 * 
@@ -186,7 +190,6 @@ public class Bubble {
 		radius = (float) (originalRadius * d);
 
 		titlePaint.setTextSize(getTextSize());
-
 		titleSplit.clear();
 	}
 
@@ -198,7 +201,7 @@ public class Bubble {
 	}
 
 	private float getTextSize() {
-		return(radius / 2.25f);
+		return(radius / 2.75f);
 	}
 
 	private int textFactor = 0;
@@ -255,6 +258,10 @@ public class Bubble {
 		return title;
 	}
 
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
 	public int getPriority() {
 		return priority;
 	}
@@ -309,6 +316,10 @@ public class Bubble {
 
 	public void setLinks(List<Integer> links) {
 		this.links = links;
+	}
+
+	public void addLink(int link) {
+		this.links.add(link);
 	}
 
 	public JSONArray getLinksJSONArray() {
