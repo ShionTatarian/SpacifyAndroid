@@ -114,7 +114,7 @@ public class ComicParser {
 //					"<guid isPermaLink=\"([^<]*)\">([^<]*)</guid>[^<]*"+
 //				"[^</item>]*</item");
 		Pattern pattern = Pattern
-				.compile("<item>[^<]*<title>([^<]*)</title>[^<link>]*<link>([^<]*)</link>");
+				.compile("<item>[^<]*<title>(.*) ([0-9][0-9]?.[0-9][0-9]?.[0-9][0-9][0-9][0-9])</title>[^<link>]*<link>([^<]*)</link>");
 	    Matcher matcher = pattern.matcher(comicRSS);
 	    
 		Map<Integer, Bubble> bubbles = new HashMap<Integer, Bubble>();
@@ -122,8 +122,9 @@ public class ComicParser {
 
 	    while(matcher.find()) {
 	    	int groups = matcher.groupCount();
-			String title = matcher.group(1);
-			String link = matcher.group(2);
+			String title = matcher.group(1).replaceAll("&amp;", "&");
+			String date = matcher.group(2);
+			String link = matcher.group(3);
 
 			Log.d(TAG, title + " : " + link);
 			Bubble group = new Bubble(title.hashCode());
@@ -141,10 +142,10 @@ public class ComicParser {
 			bubbles.put(group.getID(), group);
 
 			Bubble b = new Bubble(link.hashCode());
-			b.setTitle("New");
+			b.setTitle(date);
 			b.setStyle(COMIC_BUBBLE_STYLE);
 			b.setContents(link);
-			b.setPriority(0);
+			b.setPriority(1);
 			b.setTitleImageUrl("");
 			b.addLink(group.getID());
 			b.setType("comic");

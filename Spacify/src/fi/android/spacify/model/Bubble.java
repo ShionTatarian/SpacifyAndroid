@@ -15,6 +15,7 @@ import android.graphics.Paint.Style;
 import android.util.Log;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
 
+@SuppressWarnings("javadoc")
 public class Bubble {
 
 	private final String TAG = "Bubble";
@@ -46,6 +47,7 @@ public class Bubble {
 	private float originalRadius = 30;
 	public float radius = 30;
 	public Paint bubblePaint, titlePaint;
+	public boolean linkStatusChanged = false;
 
 	private int priority, id;
 	private String debugID = "", type = "", style = "", title = "", contents = "",
@@ -319,7 +321,13 @@ public class Bubble {
 	}
 
 	public void addLink(int link) {
-		this.links.add(link);
+		if(!links.contains(link)) {
+			this.links.add(link);
+		}
+	}
+
+	public void removeLink(Integer link) {
+		this.links.remove(link);
 	}
 
 	public JSONArray getLinksJSONArray() {
@@ -362,6 +370,48 @@ public class Bubble {
 	public void setTouchOffset(int tX, int tY) {
 		offsetX = x - tX;
 		offsetY = y - tY;
+	}
+
+	private final long ANIMATE_TOUCH = 2000;
+
+	public void animateOnTouch() {
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				// TODO make better
+				for(double i = 1; i < 50; i++) {
+					double zoom = 1 + (i / 100);
+					zoom(zoom);
+
+					try {
+						Thread.sleep(5);
+					} catch(InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}).start();
+	}
+
+	public void animateOnUp() {
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				// TODO make better
+				for(double i = 1; i < 50; i++) {
+					double zoom = 1.5 - (i / 100);
+					zoom(zoom);
+
+					try {
+						Thread.sleep(5);
+					} catch(InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}).start();
 	}
 
 }

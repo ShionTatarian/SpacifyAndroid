@@ -1,9 +1,7 @@
 package fi.android.spacify.view;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
@@ -11,6 +9,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.RadialGradient;
+import android.graphics.Shader.TileMode;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -19,6 +19,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import fi.android.service.WorkService;
 import fi.android.spacify.R;
+import fi.android.spacify.db.BubbleDatabase;
 import fi.android.spacify.gesture.GestureInterface;
 import fi.android.spacify.gesture.LongClickGesture;
 import fi.android.spacify.gesture.SimpleTouchGesture;
@@ -54,6 +55,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	private Map<Integer, Bubble> bubbles = new HashMap<Integer, Bubble>();
 	private final HashMap<Integer, Bubble> movingBubbles = new HashMap<Integer, Bubble>();
+	private final BubbleDatabase db = BubbleDatabase.getInstance();
 
 	private boolean changingLists = false;
 	private boolean hitDetection = false;
@@ -104,13 +106,12 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	}
 
-	private List<Integer> drawnBubbles = new ArrayList<Integer>();
-
 	@Override
 	public void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 
 		clearCanvas(canvas);
+		drawTouchedGradient(canvas);
 
 		if(changingLists) {
 			return;
@@ -118,28 +119,34 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		drawing = true;
 
 		Iterator<Bubble> iterator = bubbles.values().iterator();
-		drawnBubbles.clear();
 		while(iterator.hasNext()) {
 			Bubble b1 = iterator.next();
-			if(!drawnBubbles.contains(b1.getID())) {
-				for(int id : b1.getLinks()) {
-					Bubble b2 = bubbles.get(id);
-					if(b2 != null) {
-						if(b1 != null) {
-							canvas.drawLine(b1.x, b1.y, b2.x, b2.y, linePaint);
-						}
-						b2.onDraw(canvas);
-						drawnBubbles.add(b2.getID());
+			for(int id : b1.getLinks()) {
+				Bubble b2 = bubbles.get(id);
+				if(b2 != null) {
+					if(b1 != null) {
+						canvas.drawLine(b1.x, b1.y, b2.x, b2.y, linePaint);
 					}
+					b2.onDraw(canvas);
 				}
-				b1.onDraw(canvas);
-				drawnBubbles.add(b1.getID());
 			}
+			b1.onDraw(canvas);
 		}
-		// for(Bubble b : bubbles) {
-		// b.onDraw(canvas);
-		// }
+
 		drawing = false;
+	}
+
+	private final int GRADIENT_HALO = 25;
+
+	private void drawTouchedGradient(Canvas c) {
+		for(Bubble b : movingBubbles.values()) {
+			RadialGradient gradient = new RadialGradient(b.x, b.y, b.radius + GRADIENT_HALO,
+					Color.GREEN, Color.BLACK, TileMode.CLAMP);
+			Paint p = new Paint();
+			p.setDither(true);
+			p.setShader(gradient);
+			c.drawCircle(b.x, b.y, b.radius + GRADIENT_HALO, p);
+		}
 	}
 
 	private void calculateSize(Canvas c) {
@@ -308,6 +315,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 						(int) event.getY(pointerIndex));
 				GestureInterface<Bubble> longClick = gestureMap.get(BubbleEvents.LONG_CLICK);
 				if(bHit != null) {
+					bHit.animateOnTouch();
 					bHit.setTouchOffset(((int) event.getX(pointerIndex)),
 							(int) event.getY(pointerIndex));
 					GestureInterface<Bubble> doubleClick = gestureMap
@@ -402,7 +410,9 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 					gesture.onTouchUp(b, event);
 				}
 				if(b != null) {
+					b.linkStatusChanged = false;
 					b.movement = BubbleMovement.INERT;
+					b.animateOnUp();
 				}
 
 				if(zoomPointerIndex != -1) {
@@ -510,8 +520,32 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 						return;
 					}
 
-					if(b.movement != BubbleMovement.MOVING && isCollision(bubble, b)) {
-						autoMove(bubble, b);
+					if(b.getID() != bubble.getID()) {
+						if(b.movement != BubbleMovement.MOVING && isCollision(bubble, b)) {
+							autoMove(bubble, b);
+						} else if(b.movement == BubbleMovement.MOVING
+								&& bubble.movement == BubbleMovement.MOVING
+								&& isCollision(bubble, b)) {
+							if(!bubble.linkStatusChanged && !bubble.getLinks().contains(b.getID())) {
+								Log.d(TAG, "created link");
+								bubble.linkStatusChanged = true;
+								b.linkStatusChanged = true;
+								b.addLink(bubble.getID());
+								bubble.addLink(b.getID());
+
+								db.storeBubble(bubble);
+								db.storeBubble(b);
+							} else if(!bubble.linkStatusChanged) {
+								Log.d(TAG, "removed link");
+								bubble.linkStatusChanged = true;
+								b.linkStatusChanged = true;
+								b.removeLink(bubble.getID());
+								bubble.removeLink(b.getID());
+
+								db.storeBubble(bubble);
+								db.storeBubble(b);
+							}
+						}
 					}
 				}
 			}
@@ -646,19 +680,19 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 			@Override
 			public void run() {
+				/*
+				 * Check that the bubble is not already in BubbleSpace.
+				 */
+				if(bubbles.containsKey(b.getID())) {
+					return;
+				}
+
 				if(maxX != 0 || maxY != 0) {
 					b.x = (int) (maxX * Math.random());
 					b.y = (int) (maxY * Math.random());
 				} else {
 					b.x = (int) (400 * Math.random());
 					b.y = (int) (400 * Math.random());
-				}
-
-				/*
-				 * Check that the bubble is not already in BubbleSpace.
-				 */
-				if(bubbles.containsKey(b.getID())) {
-					return;
 				}
 
 				while(changingLists) {
@@ -689,9 +723,11 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	public boolean hasChildsVisible(Bubble b) {
 		for(int id : b.getLinks()) {
-			Bubble child = bubbles.get(id);
-			if(child != null && child.getPriority() <= b.getPriority()) {
-				return true;
+			if(id != b.getID()) {
+				Bubble child = bubbles.get(id);
+				if(child != null && child.getPriority() <= b.getPriority()) {
+					return true;
+				}
 			}
 		}
 		return false;
@@ -700,7 +736,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	public void removeChildren(Bubble b) {
 		for(int id : b.getLinks()) {
 			Bubble child = bubbles.get(id);
-			if(child != null && child.getPriority() <= b.getPriority()) {
+			if(child != null && child.getPriority() <= b.getPriority() && id != b.getID()) {
 				removeBubble(id);
 			}
 		}
