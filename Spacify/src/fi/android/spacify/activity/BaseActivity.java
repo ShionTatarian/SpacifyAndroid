@@ -3,7 +3,9 @@ package fi.android.spacify.activity;
 import android.os.Bundle;
 import android.os.Handler.Callback;
 import android.os.Message;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import fi.android.service.EventService;
 import fi.android.service.WorkService;
@@ -55,6 +57,38 @@ public class BaseActivity extends FragmentActivity implements Callback {
 	public boolean handleMessage(Message msg) {
 		Log.v(TAG, "Got message:" + msg.what);
 		return false;
+	}
+
+	protected void addFragment(int resID, Fragment frag) {
+		FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+		ft.replace(resID, frag);
+		ft.commit();
+	}
+
+	protected void addFragment(int resID, Fragment frag, int enterAnimation, int exitAnimation) {
+		FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+		ft.setCustomAnimations(enterAnimation, exitAnimation);
+		ft.replace(resID, frag);
+		ft.commit();
+	}
+
+	protected void removeFragment(Fragment frag) {
+		FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+		ft.remove(frag);
+		ft.commit();
+	}
+
+	protected void changeFragment(int resID, Fragment frag) {
+		FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+		ft.replace(resID, frag);
+		ft.commit();
+	}
+
+	protected void changeFragment(int resID, Fragment frag, int enterAnimation, int exitAnimation) {
+		FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+		ft.setCustomAnimations(enterAnimation, exitAnimation);
+		ft.replace(resID, frag);
+		ft.commit();
 	}
 
 }

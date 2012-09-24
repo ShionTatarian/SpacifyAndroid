@@ -375,43 +375,43 @@ public class Bubble {
 	private final long ANIMATE_TOUCH = 2000;
 
 	public void animateOnTouch() {
-		new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				// TODO make better
-				for(double i = 1; i < 50; i++) {
-					double zoom = 1 + (i / 100);
-					zoom(zoom);
-
-					try {
-						Thread.sleep(5);
-					} catch(InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}).start();
+		// new Thread(new Runnable() {
+		//
+		// @Override
+		// public void run() {
+		// // TODO make better
+		// for(double i = 1; i < 50; i++) {
+		// double zoom = 1 + (i / 100);
+		// zoom(zoom);
+		//
+		// try {
+		// Thread.sleep(5);
+		// } catch(InterruptedException e) {
+		// e.printStackTrace();
+		// }
+		// }
+		// }
+		// }).start();
 	}
 
 	public void animateOnUp() {
-		new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				// TODO make better
-				for(double i = 1; i < 50; i++) {
-					double zoom = 1.5 - (i / 100);
-					zoom(zoom);
-
-					try {
-						Thread.sleep(5);
-					} catch(InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}).start();
+		// new Thread(new Runnable() {
+		//
+		// @Override
+		// public void run() {
+		// // TODO make better
+		// for(double i = 1; i < 50; i++) {
+		// double zoom = 1.5 - (i / 100);
+		// zoom(zoom);
+		//
+		// try {
+		// Thread.sleep(5);
+		// } catch(InterruptedException e) {
+		// e.printStackTrace();
+		// }
+		// }
+		// }
+		// }).start();
 	}
 
 }

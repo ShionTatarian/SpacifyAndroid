@@ -7,4 +7,9 @@
     <string name="control_fullscreen">Fullscreen</string>
     <string name="control_delete">Delete</string>
 
+    <!-- MainActivity Tabs -->
+    <string name="tab_map">Map</string>
+    <string name="tab_me">My</string>
+    <string name="tab_server">Server</string>
+
 </resources>

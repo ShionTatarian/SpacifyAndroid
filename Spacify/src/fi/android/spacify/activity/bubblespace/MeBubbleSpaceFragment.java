@@ -12,10 +12,13 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import fi.android.service.WorkService;
 import fi.android.spacify.R;
-import fi.android.spacify.activity.BaseActivity;
+import fi.android.spacify.activity.BaseFragment;
 import fi.android.spacify.gesture.GestureInterface;
 import fi.android.spacify.model.Bubble;
 import fi.android.spacify.service.ContentManagementService;
@@ -29,11 +32,12 @@ import fi.spacify.android.util.Events;
  * @author Tommy
  *
  */
-public class BubbleSpaceActivity extends BaseActivity implements ControlCallback {
+public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallback {
 	
 	private Vibrator vibrator;
 	private final int VIBRATION_TIME = 200;
 	private final ContentManagementService cms = ContentManagementService.getInstance();
+	private final WorkService ws = WorkService.getInstance();
 
 	private BubbleSurface bSurface;
 	private PopupControlFragment controlPopup;
@@ -43,17 +47,15 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 	private final Stack<Fragment> visibleFragments = new Stack<Fragment>();
 	
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		
-		vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		vibrator = (Vibrator) getActivity().getSystemService(Context.VIBRATOR_SERVICE);
 
-		setContentView(R.layout.bubble_space);
+		View content = inflater.inflate(R.layout.bubble_space, container, false);
 		
-		popupPager = (ViewPager) findViewById(R.id.bubblespace_viewflipper);
-		popupAdapter = new PopupFragmentAdapter(getSupportFragmentManager());
+		popupPager = (ViewPager) content.findViewById(R.id.bubblespace_viewflipper);
+		popupAdapter = new PopupFragmentAdapter(getActivity().getSupportFragmentManager());
 		popupPager.setAdapter(popupAdapter);
-		bSurface = (BubbleSurface) findViewById(R.id.bubblespace_surface);
+		bSurface = (BubbleSurface) content.findViewById(R.id.bubblespace_surface);
 		bSurface.setGesture(BubbleEvents.LONG_CLICK, onLongClick);
 		bSurface.setGesture(BubbleEvents.DOUBLE_CLICK, onDoubleClick);
 		bSurface.setGesture(BubbleEvents.SINGLE_TOUCH, onSingleTouch);
@@ -61,6 +63,8 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 		controlPopup = new PopupControlFragment();
 		controlPopup.setCallback(this);
 		cms.fetchBubbles();
+
+		return content;
 	}
 
 	private final GestureInterface<Bubble> onDoubleClick = new GestureInterface<Bubble>() {
@@ -120,7 +124,7 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 		if(tryClosingPopups()) {
 			return true;
 		} else if(visibleFragments.size() > 0) {
-			FragmentManager fm = getSupportFragmentManager();
+			FragmentManager fm = getActivity().getSupportFragmentManager();
 			FragmentTransaction ft = fm.beginTransaction();
 			ft.remove(visibleFragments.pop());
 			ft.commit();
@@ -150,7 +154,7 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 		public void onGestureDetected(Bubble b, MotionEvent ev) {
 			controlPopup.setBubble(b);
 			vibrator.vibrate(VIBRATION_TIME);
-			FragmentManager fm = getSupportFragmentManager();
+			FragmentManager fm = getActivity().getSupportFragmentManager();
 			FragmentTransaction ft = fm.beginTransaction();
 			if(b != null) {
 				ft.replace(R.id.popup_controls, controlPopup);
@@ -163,21 +167,20 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 		}
 	};
 	
-	@Override
-	public void onBackPressed() {
+	public boolean onBackPressed() {
 		if(tryClosingFragments()) {
-			return;
+			return true;
 		} else {
-			super.onBackPressed();
+			return false;
 		}
 	};
 
-	private void updateBubbles() {
+	public void updateBubbles() {
 		ws.postWork(new Runnable() {
 
 			@Override
 			public void run() {
-				synchronized(BubbleSpaceActivity.this) {
+				synchronized(MeBubbleSpaceFragment.this) {
 					for(Bubble b : cms.getTopLevelBubbles()) {
 						bSurface.addBubble(b);
 					}
@@ -220,15 +223,7 @@ public class BubbleSpaceActivity extends BaseActivity implements ControlCallback
 		view.bringToFront();
 	}
 
-	@Override
-	protected void onResume() {
-		super.onResume();
-		updateBubbles();
-	}
-
-	@Override
-	protected void onPause() {
-		super.onPause();
+	public void pauseSurface() {
 		bSurface.stopThreads();
 	}
 
