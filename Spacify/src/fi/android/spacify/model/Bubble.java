@@ -14,6 +14,7 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.util.Log;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
+import fi.android.spacify.view.BubbleSurface;
 
 @SuppressWarnings("javadoc")
 public class Bubble {
@@ -24,7 +25,7 @@ public class Bubble {
 		public static final String debugID = "debugId";
 		public static final String id = "id";
 		public static final String type = "type";
-		public static final String priority = "priority";
+		public static final String size = "size";
 		public static final String style = "style";
 		public static final String title = "title";
 		public static final String contents = "contents";
@@ -81,8 +82,8 @@ public class Bubble {
 			if(json.has(BubbleJSON.id)) {
 				this.id = json.getInt(BubbleJSON.id);
 			}
-			if(json.has(BubbleJSON.priority)) {
-				this.priority = json.getInt(BubbleJSON.priority);
+			if(json.has(BubbleJSON.size)) {
+				this.priority = json.getInt(BubbleJSON.size);
 			}
 			if(json.has(BubbleJSON.contents)) {
 				this.contents = json.getString(BubbleJSON.contents);
@@ -239,7 +240,12 @@ public class Bubble {
 			calculateTextSizes();
 		}
 
-		canvas.drawCircle(x, y, radius, bubblePaint);
+		// canvas.drawCircle(x, y, radius, bubblePaint);
+		canvas.save();
+		canvas.scale((radius / 30), (radius / 30), x, y);
+		canvas.drawBitmap(BubbleSurface.blueBubble, x - BubbleSurface.blueBubble.getWidth() / 2, y
+				- BubbleSurface.blueBubble.getHeight() / 2, bubblePaint);
+		canvas.restore();
 
 		if(title != null) {
 			int i = 0;
@@ -372,7 +378,44 @@ public class Bubble {
 		offsetY = y - tY;
 	}
 
-	private final long ANIMATE_TOUCH = 2000;
+	private final double ANIMATION_TIME = 400d;
+
+	public void moveTo(final int nx, final int ny) {
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				final int dx = x - nx;
+				final int dy = y - ny;
+				
+				long start = System.currentTimeMillis();
+				double pulse = 0;
+				movement = BubbleMovement.AUTOMATIC;
+
+				Log.d(TAG, "[" + title + "]: (" + x + "," + y + ") to (" + nx + "," + ny + ") dx="
+						+ dx + ", dy="
+						+ dy + "");
+
+				int oldX = x;
+				int oldY = y;
+				while(movement != BubbleMovement.MOVING && pulse <= 1) {
+					pulse = ((System.currentTimeMillis() - start) / ANIMATION_TIME);
+					
+					x = oldX + (int) Math.floor(dx * pulse);
+					y = oldY + (int) Math.floor(dy * pulse);
+					Log.d(TAG, "Moving [" + title + "] pulse: " + pulse + " x[" + x + "], y[" + y
+							+ "]");
+
+					try {
+						Thread.sleep(50);
+					} catch(InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				movement = BubbleMovement.INERT;
+			}
+		}).start();
+	}
 
 	public void animateOnTouch() {
 		// new Thread(new Runnable() {

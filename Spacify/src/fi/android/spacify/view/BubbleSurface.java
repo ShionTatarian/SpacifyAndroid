@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -36,6 +38,10 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	private final String TAG = "BubbleSurface";
 	private final WorkService ws = WorkService.getInstance();
+	private Bitmap background;
+	public static Bitmap whiteBubble, greenBubble, blueBubble;
+
+	private Paint bgPaint;
 
 	/**
 	 * Maximum refresh rate is 30 frames per second.
@@ -101,9 +107,18 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		
 		linePaint = new Paint();
 		linePaint.setAntiAlias(true);
-		linePaint.setColor(Color.RED);
+		linePaint.setColor(Color.GREEN);
 		linePaint.setStrokeWidth(context.getResources().getDimension(R.dimen.margin_half));
 
+		BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+		background = BitmapFactory.decodeResource(getResources(), R.drawable.bg, options);
+		whiteBubble = BitmapFactory.decodeResource(getResources(), R.drawable.transparentball,
+				options);
+		greenBubble = BitmapFactory.decodeResource(getResources(), R.drawable.greenball, options);
+		blueBubble = BitmapFactory
+				.decodeResource(getResources(), R.drawable.lightblueball, options);
+		bgPaint = new Paint();
 	}
 
 	@Override
@@ -136,12 +151,12 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		drawing = false;
 	}
 
-	private final int GRADIENT_HALO = 25;
+	private final int GRADIENT_HALO = 35;
 
 	private void drawTouchedGradient(Canvas c) {
 		for(Bubble b : movingBubbles.values()) {
 			RadialGradient gradient = new RadialGradient(b.x, b.y, b.radius + GRADIENT_HALO,
-					Color.GREEN, Color.BLACK, TileMode.CLAMP);
+					Color.WHITE, Color.TRANSPARENT, TileMode.CLAMP);
 			Paint p = new Paint();
 			p.setDither(true);
 			p.setShader(gradient);
@@ -155,7 +170,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	private void clearCanvas(Canvas c) {
-		c.drawColor(Color.BLACK);
+		c.drawBitmap(background, c.getMatrix(), null);
 	}
 
 	/**
@@ -247,7 +262,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 						}
 					} else {
 						synchronized(this) {
-							sleep(10);
+							sleep(MAX_REFRESH_RATE / 2);
 						}
 					}
 				} catch(Exception e) {
@@ -314,7 +329,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 				Bubble bHit = hitBubble((int) event.getX(pointerIndex),
 						(int) event.getY(pointerIndex));
 				GestureInterface<Bubble> longClick = gestureMap.get(BubbleEvents.LONG_CLICK);
-				if(bHit != null) {
+				if(bHit != null && bHit.movement != BubbleMovement.MOVING) {
 					bHit.animateOnTouch();
 					bHit.setTouchOffset(((int) event.getX(pointerIndex)),
 							(int) event.getY(pointerIndex));
@@ -345,15 +360,15 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 					// b.y = y;
 					//
 					// bubbles.add(b);
-					
-					if(event.getPointerCount() == 2) {
-						zoomPointerIndex = pointerIndex;
-					} else {
-						zoomPointerIndex = -1;
-						firstZoomDistance = 0;
-						zoomBack();
-					}
 				}
+				if(event.getPointerCount() == 2) {
+					zoomPointerIndex = pointerIndex;
+				} else {
+					zoomPointerIndex = -1;
+					firstZoomDistance = 0;
+					zoomBack();
+				}
+
 				GestureInterface<Bubble> singleTouch = gestureMap.get(BubbleEvents.SINGLE_TOUCH);
 				if(singleTouch != null) {
 					SimpleTouchGesture<Bubble> gesture = new SimpleTouchGesture<Bubble>(singleTouch);
@@ -379,6 +394,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 							}
 
 							if(zoomPointerIndex != -1 && movingBubbles.size() == 1) {
+								// zoom happening
 								double d = distance(event.getX(key), event.getY(key),
 										event.getX(zoomPointerIndex), event.getY(zoomPointerIndex));
 								if(firstZoomDistance == 0) {
@@ -449,7 +465,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		return true;
 	}
 
-	private final int DRAW_PAUSE_DELAY = 1000;
+	private final int DRAW_PAUSE_DELAY = 3000;
 
 	private Runnable pauseDrawing = new Runnable() {
 
@@ -507,6 +523,11 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		return Math.sqrt(dx + dy);
 	}
 
+	/**
+	 * Move bubble and react to collisions.
+	 * 
+	 * @param bubble
+	 */
 	private void moving(final Bubble bubble) {
 		if(changingLists) {
 			return;
@@ -687,12 +708,14 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 					return;
 				}
 
-				if(maxX != 0 || maxY != 0) {
-					b.x = (int) (maxX * Math.random());
-					b.y = (int) (maxY * Math.random());
-				} else {
-					b.x = (int) (400 * Math.random());
-					b.y = (int) (400 * Math.random());
+				if(b.x == 0 && b.y == 0) {
+					if(maxX != 0 || maxY != 0) {
+						b.x = (int) (maxX * Math.random());
+						b.y = (int) (maxY * Math.random());
+					} else {
+						b.x = (int) (400 * Math.random());
+						b.y = (int) (400 * Math.random());
+					}
 				}
 
 				while(changingLists) {
@@ -721,22 +744,28 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		return distance(b1.x, b1.y, b2.x, b2.y);
 	}
 
+	/**
+	 * Returns true if all children are visible. Else false.
+	 * 
+	 * @param b
+	 * @return
+	 */
 	public boolean hasChildsVisible(Bubble b) {
 		for(int id : b.getLinks()) {
 			if(id != b.getID()) {
 				Bubble child = bubbles.get(id);
-				if(child != null && child.getPriority() <= b.getPriority()) {
-					return true;
+				if(child == null) {
+					return false;
 				}
 			}
 		}
-		return false;
+		return true;
 	}
 
 	public void removeChildren(Bubble b) {
 		for(int id : b.getLinks()) {
 			Bubble child = bubbles.get(id);
-			if(child != null && child.getPriority() <= b.getPriority() && id != b.getID()) {
+			if(child != null && child.getPriority() < b.getPriority() && id != b.getID()) {
 				removeBubble(id);
 			}
 		}

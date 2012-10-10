@@ -1,7 +1,9 @@
 package fi.android.spacify.activity.bubblespace;
 
+import java.util.Random;
 import java.util.Stack;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -12,6 +14,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
+import android.util.DisplayMetrics;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -44,7 +48,21 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 	private ViewPager popupPager;
 	private PopupFragmentAdapter popupAdapter;
 
+	private int height, width;
+	
 	private final Stack<Fragment> visibleFragments = new Stack<Fragment>();
+	
+	@Override
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
+		
+		DisplayMetrics metrics = new DisplayMetrics();
+		Display display = activity.getWindowManager().getDefaultDisplay();
+		display.getMetrics(metrics);
+		
+		height = metrics.heightPixels;
+		width = metrics.widthPixels;
+	}
 	
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -57,7 +75,7 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 		popupPager.setAdapter(popupAdapter);
 		bSurface = (BubbleSurface) content.findViewById(R.id.bubblespace_surface);
 		bSurface.setGesture(BubbleEvents.LONG_CLICK, onLongClick);
-		bSurface.setGesture(BubbleEvents.DOUBLE_CLICK, onDoubleClick);
+		// bSurface.setGesture(BubbleEvents.DOUBLE_CLICK, onDoubleClick);
 		bSurface.setGesture(BubbleEvents.SINGLE_TOUCH, onSingleTouch);
 		
 		controlPopup = new PopupControlFragment();
@@ -110,7 +128,39 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 				if(bSurface.hasChildsVisible(b)) {
 					bSurface.removeChildren(b);
 				} else {
+					Random r = new Random();
 					for(Bubble bubble : cms.getBubbles(b.getLinks())) {
+						bubble.x = b.x;
+						bubble.y = b.y;
+						
+						
+
+						int nx;
+						int ny;
+						int radius = (int) b.radius;
+						if(r.nextBoolean()) {
+							// positive change
+							if(r.nextBoolean()) {
+								// positive y change
+								ny = radius + r.nextInt(radius);
+							} else {
+								// negative y change
+								ny = -radius - r.nextInt(radius);
+							}
+							nx = radius + r.nextInt(radius);
+						} else {
+							// negative x change
+							if(r.nextBoolean()) {
+								// positive y change
+								ny = radius + r.nextInt(radius);
+							} else {
+								ny = -radius - r.nextInt(radius);
+							}
+							nx = -radius - r.nextInt(radius);
+						}
+						bubble.moveTo(bubble.x + nx, bubble.y + ny);
+						
+
 						bSurface.addBubble(bubble);
 					}
 				}
@@ -205,15 +255,6 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 		return super.handleMessage(msg);
 	}
 	
-	/**
-	 * Popup hider onClick.
-	 * 
-	 * @param view
-	 */
-	public void onHiderClick(View view) {
-		onBackPressed();
-	}
-
 	/**
 	 * Bring clicked view to front.
 	 * 

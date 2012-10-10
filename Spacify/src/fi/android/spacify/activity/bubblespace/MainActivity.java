@@ -72,6 +72,16 @@ public class MainActivity extends BaseActivity {
 		}
 	}
 
+	/**
+	 * Popup hider onClick.
+	 * 
+	 * @param view
+	 */
+	public void onHiderClick(View view) {
+		// TODO: do in active tab
+		meTab.onBackPressed();
+	}
+
 	@Override
 	public void onBackPressed() {
 		if (meTab.onBackPressed()) {
