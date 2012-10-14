@@ -91,4 +91,8 @@ public class MainActivity extends BaseActivity {
 		super.onBackPressed();
 	}
 
+	public void onResetClick(View v) {
+		meTab.reset();
+	}
+
 }

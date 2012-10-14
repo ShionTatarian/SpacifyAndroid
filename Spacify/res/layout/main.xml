@@ -33,7 +33,15 @@
             android:layout_weight="1"
             android:onClick="onServerTabClick"
             android:textOff="@string/tab_server"
-            android:textOn="@string/tab_server" />
+            android:textOn="@string/tab_server"
+            android:visibility="gone" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="onResetClick"
+            android:text="Reset" />
     </LinearLayout>
 
     <FrameLayout

@@ -2,6 +2,7 @@ package fi.android.spacify.view;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
@@ -50,13 +51,15 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 	private final int DOUBLE_TAP_INTERVAL = 500;
 
+	private final int ZOOM_DOWN_TO = 60;
+
 	private GraphicThread graphicThread;
 	private final HashMap<Integer, SimpleTouchGesture<Bubble>> gestureList = new HashMap<Integer, SimpleTouchGesture<Bubble>>();
 	private final HashMap<String, GestureInterface<Bubble>> gestureMap = new HashMap<String, GestureInterface<Bubble>>();
 
-	private int maxX = 0;
+	public static int maxX = 0;
+	public static int maxY = 0;
 	private int minX = 0;
-	private int maxY = 0;
 	private int minY = 0;
 
 	private Map<Integer, Bubble> bubbles = new HashMap<Integer, Bubble>();
@@ -199,7 +202,9 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 		holder.setFormat(PixelFormat.RGBA_8888);
 		Canvas c = holder.lockCanvas();
-		calculateSize(c);
+		if (maxX == 0 || maxY == 0) {
+			calculateSize(c);
+		}
 		holder.unlockCanvasAndPost(c);
 
 		startGraphics();
@@ -256,6 +261,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 						if(holder != null) {
 							c = holder.lockCanvas(null);
 							if(c != null && surface != null) {
+								calculateSize(c);
 								surface.onDraw(c);
 								lastUpdate = System.currentTimeMillis();
 							}
@@ -544,6 +550,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 					if(b.getID() != bubble.getID()) {
 						if(b.movement != BubbleMovement.MOVING && isCollision(bubble, b)) {
 							autoMove(bubble, b);
+							b.lockedToPlase = false;
 						} else if(b.movement == BubbleMovement.MOVING
 								&& bubble.movement == BubbleMovement.MOVING
 								&& isCollision(bubble, b)) {
@@ -660,6 +667,11 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 		removeBubble(removed.getID());
 	}
 
+	public void clear() {
+		stopThreads();
+		bubbles.clear();
+	}
+
 	/**
 	 * Inform BubbleSurface that this Bubble should be removed.
 	 * 
@@ -674,7 +686,9 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 				changingLists = true;
 				while(changingLists) {
 					if(!hitDetection && !drawing && !movementChange) {
-						bubbles.remove(removed);
+						synchronized (bubbles) {
+							bubbles.remove(removed);
+						}
 						changingLists = false;
 					} else {
 						synchronized(this) {
@@ -728,7 +742,9 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 					}
 				}
 
-				bubbles.put(b.getID(), b);
+				synchronized (bubbles) {
+					bubbles.put(b.getID(), b);
+				}
 			}
 		});
 	}
@@ -765,10 +781,47 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	public void removeChildren(Bubble b) {
 		for(int id : b.getLinks()) {
 			Bubble child = bubbles.get(id);
-			if(child != null && child.getPriority() < b.getPriority() && id != b.getID()) {
+			if (child != null && id != b.getID()) {
 				removeBubble(id);
 			}
 		}
+	}
+
+	public void moveAllButTheseToCorner(List<Integer> links) {
+		synchronized (bubbles) {
+			for (Bubble b : bubbles.values()) {
+				if (!links.contains(b.getID()) && !b.lockedToPlase) {
+					b.lockedToPlase = true;
+					int[] array = getFreeSidePosition();
+					b.moveAndScaleTo(array[0], array[1], ZOOM_DOWN_TO);
+				}
+			}
+		}
+	}
+
+	private int[] getFreeSidePosition() {
+		int[] array = new int[2];
+		// default position is top right corner if no other pace found
+		array[0] = maxX - ZOOM_DOWN_TO;
+		array[1] = ZOOM_DOWN_TO;
+
+		for (int x = 1; x < (maxX / ZOOM_DOWN_TO); x++) {
+			if (hitBubble(x * ZOOM_DOWN_TO, ZOOM_DOWN_TO / 2) == null) {
+				array[0] = x * ZOOM_DOWN_TO;
+				array[1] = ZOOM_DOWN_TO;
+				return array;
+			}
+		}
+
+		for (int y = 1; y < (maxY / ZOOM_DOWN_TO); y++) {
+			if (hitBubble(y * ZOOM_DOWN_TO, ZOOM_DOWN_TO / 2) == null) {
+				array[0] = maxX - ZOOM_DOWN_TO;
+				array[1] = y * ZOOM_DOWN_TO;
+				return array;
+			}
+		}
+
+		return array;
 	}
 
 }

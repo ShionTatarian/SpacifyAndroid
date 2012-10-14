@@ -8,10 +8,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
+import android.graphics.Rect;
 import android.util.Log;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
 import fi.android.spacify.view.BubbleSurface;
@@ -42,17 +44,18 @@ public class Bubble {
 
 	public static final double SPEED = 0.3, SIZE_FACTOR = 10;
 	private final int ZOOM_CAP = 3;
-	
+
 	public int movement = BubbleMovement.INERT;
 	public int x = 0, y = 0;
 	private float originalRadius = 30;
 	public float radius = 30;
 	public Paint bubblePaint, titlePaint;
 	public boolean linkStatusChanged = false;
+	public boolean lockedToPlase = false;
 
 	private int priority, id;
-	private String debugID = "", type = "", style = "", title = "", contents = "",
-			titleImageUrl = "", contentImageUrl = "";
+	private String debugID = "", type = "", style = "", title = "", contents = "", titleImageUrl = "",
+			contentImageUrl = "";
 	private List<Integer> links = new ArrayList<Integer>();
 	private long latitude = 0, longitude = 0;
 
@@ -79,35 +82,35 @@ public class Bubble {
 
 	public Bubble(JSONObject json) {
 		try {
-			if(json.has(BubbleJSON.id)) {
+			if (json.has(BubbleJSON.id)) {
 				this.id = json.getInt(BubbleJSON.id);
 			}
-			if(json.has(BubbleJSON.size)) {
+			if (json.has(BubbleJSON.size)) {
 				this.priority = json.getInt(BubbleJSON.size);
 			}
-			if(json.has(BubbleJSON.contents)) {
+			if (json.has(BubbleJSON.contents)) {
 				this.contents = json.getString(BubbleJSON.contents);
 			}
-			if(json.has(BubbleJSON.contentsImageUrl)) {
+			if (json.has(BubbleJSON.contentsImageUrl)) {
 				this.contentImageUrl = json.getString(BubbleJSON.contentsImageUrl);
 			}
-			if(json.has(BubbleJSON.debugID)) {
+			if (json.has(BubbleJSON.debugID)) {
 				this.debugID = json.getString(BubbleJSON.debugID);
 			}
-			if(json.has(BubbleJSON.style)) {
+			if (json.has(BubbleJSON.style)) {
 				this.style = json.getString(BubbleJSON.style);
 			}
-			if(json.has(BubbleJSON.title)) {
+			if (json.has(BubbleJSON.title)) {
 				this.title = json.getString(BubbleJSON.title);
 			}
-			if(json.has(BubbleJSON.titleImageUrl)) {
+			if (json.has(BubbleJSON.titleImageUrl)) {
 				this.titleImageUrl = json.getString(BubbleJSON.titleImageUrl);
 			}
-			if(json.has(BubbleJSON.links)) {
+			if (json.has(BubbleJSON.links)) {
 				JSONArray jArray = json.getJSONArray(BubbleJSON.links);
 				parseJsonLinks(jArray);
 			}
-		} catch(JSONException e) {
+		} catch (JSONException e) {
 			Log.w(TAG, "Error parsing JSON", e);
 		}
 
@@ -123,7 +126,7 @@ public class Bubble {
 		titleImageUrl = c.getString(c.getColumnIndex(BubbleColumns.TITLE_IMAGE_URL));
 		try {
 			parseJsonLinks(new JSONArray(c.getString((c.getColumnIndex(BubbleColumns.LINKS)))));
-		} catch(JSONException e) {
+		} catch (JSONException e) {
 			e.printStackTrace();
 		}
 		type = c.getString(c.getColumnIndex(BubbleColumns.TYPE));
@@ -133,15 +136,15 @@ public class Bubble {
 		longitude = c.getLong(c.getColumnIndex(BubbleColumns.LONGITUDE));
 		// x = c.getInt(c.getColumnIndex(BubbleColumns.X));
 		// y = c.getInt(c.getColumnIndex(BubbleColumns.Y));
-		
+
 		init();
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if(o instanceof Bubble) {
+		if (o instanceof Bubble) {
 			Bubble b = (Bubble) o;
-			if(b.id == id) {
+			if (b.id == id) {
 				return true;
 			} else {
 				return false;
@@ -182,14 +185,6 @@ public class Bubble {
 	 * @param d
 	 */
 	public void zoom(double d) {
-		if(d > ZOOM_CAP) {
-			// cap zoom at ZOOM_CAP
-			return;
-		}
-		if(d < 0.5) {
-			return;
-		}
-
 		radius = (float) (originalRadius * d);
 
 		titlePaint.setTextSize(getTextSize());
@@ -204,7 +199,7 @@ public class Bubble {
 	}
 
 	private float getTextSize() {
-		return(radius / 2.75f);
+		return (radius / 2.75f);
 	}
 
 	private int textFactor = 0;
@@ -218,9 +213,9 @@ public class Bubble {
 
 		String line = "";
 		float total = 0;
-		for(int i=0; i<title.length(); i++) {
+		for (int i = 0; i < title.length(); i++) {
 			char c = title.charAt(i);
-			if(total + charWidths[i] < textFactor * 2) {
+			if (total + charWidths[i] < textFactor * 2) {
 				total += charWidths[i];
 				line += c;
 			} else {
@@ -230,32 +225,34 @@ public class Bubble {
 			}
 		}
 
-		if(line.length() > 0) {
+		if (line.length() > 0) {
 			titleSplit.add(line);
 		}
 	}
 
 	public void onDraw(Canvas canvas) {
-		if(titleSplit.size() == 0) {
+		if (titleSplit.size() == 0) {
 			calculateTextSizes();
 		}
 
-		// canvas.drawCircle(x, y, radius, bubblePaint);
-		canvas.save();
-		canvas.scale((radius / 30), (radius / 30), x, y);
-		canvas.drawBitmap(BubbleSurface.blueBubble, x - BubbleSurface.blueBubble.getWidth() / 2, y
-				- BubbleSurface.blueBubble.getHeight() / 2, bubblePaint);
-		canvas.restore();
+		Bitmap b = null;
+		if (style.contains("green")) {
+			b = BubbleSurface.greenBubble;
+		} else {
+			b = BubbleSurface.blueBubble;
+		}
+		canvas.drawBitmap(b, null, new Rect((int) (x - radius), (int) (y - radius), (int) (x + radius),
+				(int) (y + radius)), bubblePaint);
 
-		if(title != null) {
+		if (title != null) {
 			int i = 0;
-			for(String line : titleSplit) {
+			for (String line : titleSplit) {
 				int dx = x - textFactor;
 				int dy = (int) ((y - (textFactor / 2)) + (i * getTextSize()));
 				canvas.drawText(line, dx, dy, titlePaint);
 				i += 1;
 
-				if(i * getTextSize() >= textFactor * 2) {
+				if (i * getTextSize() >= textFactor * 2) {
 					break;
 				}
 			}
@@ -327,7 +324,7 @@ public class Bubble {
 	}
 
 	public void addLink(int link) {
-		if(!links.contains(link)) {
+		if (!links.contains(link)) {
 			this.links.add(link);
 		}
 	}
@@ -338,17 +335,17 @@ public class Bubble {
 
 	public JSONArray getLinksJSONArray() {
 		JSONArray jArray = new JSONArray();
-		for(int link : links) {
+		for (int link : links) {
 			jArray.put(link);
 		}
 		return jArray;
 	}
 
 	public void parseJsonLinks(JSONArray jArray) {
-		for(int i = 0; i < jArray.length(); i++) {
+		for (int i = 0; i < jArray.length(); i++) {
 			try {
 				links.add(jArray.getInt(i));
-			} catch(JSONException e) {
+			} catch (JSONException e) {
 				e.printStackTrace();
 			}
 		}
@@ -380,35 +377,46 @@ public class Bubble {
 
 	private final double ANIMATION_TIME = 400d;
 
-	public void moveTo(final int nx, final int ny) {
+	public void moveTo(int nx, int ny) {
+		final int dx;
+		final int dy;
+
+		if (nx + radius >= BubbleSurface.maxX) {
+			nx = (int) (BubbleSurface.maxX - radius);
+		} else if (nx - radius <= 0) {
+			nx = (int) radius;
+		}
+		dx = x - nx;
+
+		if (ny >= BubbleSurface.maxY) {
+			ny = (int) (BubbleSurface.maxY - radius);
+		} else if (ny - radius <= 0) {
+			ny = (int) radius;
+		}
+		dy = y - ny;
+
+		Log.d(TAG, "[" + title + "]: (" + x + "," + y + ") to (" + nx + "," + ny + ") dx=" + dx + ", dy=" + dy + "");
+
 		new Thread(new Runnable() {
 
 			@Override
 			public void run() {
-				final int dx = x - nx;
-				final int dy = y - ny;
-				
 				long start = System.currentTimeMillis();
 				double pulse = 0;
 				movement = BubbleMovement.AUTOMATIC;
 
-				Log.d(TAG, "[" + title + "]: (" + x + "," + y + ") to (" + nx + "," + ny + ") dx="
-						+ dx + ", dy="
-						+ dy + "");
-
 				int oldX = x;
 				int oldY = y;
-				while(movement != BubbleMovement.MOVING && pulse <= 1) {
+				while (movement != BubbleMovement.MOVING && pulse <= 1) {
 					pulse = ((System.currentTimeMillis() - start) / ANIMATION_TIME);
-					
+
 					x = oldX + (int) Math.floor(dx * pulse);
 					y = oldY + (int) Math.floor(dy * pulse);
-					Log.d(TAG, "Moving [" + title + "] pulse: " + pulse + " x[" + x + "], y[" + y
-							+ "]");
+					Log.d(TAG, "Moving [" + title + "] pulse: " + pulse + " x[" + x + "], y[" + y + "]");
 
 					try {
 						Thread.sleep(50);
-					} catch(InterruptedException e) {
+					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
@@ -417,19 +425,82 @@ public class Bubble {
 		}).start();
 	}
 
+	public void moveAndScaleTo(final int nX, final int nY, final float nRadius) {
+		Log.d(TAG, "moveAndScaleTo[" + title + "]: nX[" + nX + "], nY[" + nY + "], nRadius[" + nRadius + "]");
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				final int dx;
+				final int dy;
+
+				if (nX + radius >= BubbleSurface.maxX) {
+					dx = x - (int) (BubbleSurface.maxX - radius);
+				} else if (nX - radius <= 0) {
+					dx = x - (int) radius;
+				} else {
+					dx = x - nX;
+				}
+
+				if (nY >= BubbleSurface.maxY) {
+					dy = y - (int) (BubbleSurface.maxY - radius);
+				} else if (nY - radius <= 0) {
+					dy = y - (int) radius;
+				} else {
+					dy = y - nY;
+				}
+
+				long start = System.currentTimeMillis();
+				double pulse = 0;
+				movement = BubbleMovement.AUTOMATIC;
+
+				// Log.d(TAG, "[" + title + "]: (" + x + "," + y + ") to (" + nX
+				// + "," + nY + ") dx=" + dx + ", dy=" + dy
+				// + "");
+
+				int oldX = x;
+				int oldY = y;
+				float oldRadius = radius;
+				while (movement != BubbleMovement.MOVING && pulse <= 1) {
+					pulse = ((System.currentTimeMillis() - start) / (5 * ANIMATION_TIME));
+
+					x = oldX - (int) Math.floor(dx * pulse);
+					y = oldY - (int) Math.floor(dy * pulse);
+
+					if (radius > nRadius) {
+						double scale = 1 - ((nRadius / oldRadius) * pulse);
+						zoom(scale);
+					}
+
+					try {
+						Thread.sleep(50);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				originalRadius = radius;
+				movement = BubbleMovement.INERT;
+			}
+		}).start();
+	}
+
 	public void animateOnTouch() {
+		lockedToPlase = false;
 		// new Thread(new Runnable() {
 		//
 		// @Override
 		// public void run() {
-		// // TODO make better
-		// for(double i = 1; i < 50; i++) {
-		// double zoom = 1 + (i / 100);
+		// long start = System.currentTimeMillis();
+		// double pulse = 0;
+		// while (movement == BubbleMovement.MOVING && pulse <= 1) {
+		// pulse = ((System.currentTimeMillis() - start) / (5 *
+		// ANIMATION_TIME));
+		// double zoom = 1 + pulse;
 		// zoom(zoom);
 		//
 		// try {
-		// Thread.sleep(5);
-		// } catch(InterruptedException e) {
+		// Thread.sleep(50);
+		// } catch (InterruptedException e) {
 		// e.printStackTrace();
 		// }
 		// }
@@ -442,17 +513,29 @@ public class Bubble {
 		//
 		// @Override
 		// public void run() {
-		// // TODO make better
-		// for(double i = 1; i < 50; i++) {
-		// double zoom = 1.5 - (i / 100);
+		// float targetRadius = (float) (radius + (priority * SIZE_FACTOR));
+		// long start = System.currentTimeMillis();
+		// float oldRadius = radius;
+		// double pulse = 0;
+		// while (movement != BubbleMovement.MOVING && pulse <= 1 && pulse >= 0)
+		// {
+		// pulse = ((System.currentTimeMillis() - start) / (5 *
+		// ANIMATION_TIME));
+		//
+		// if (radius >= targetRadius && pulse >= 0) {
+		// double zoom = 1 - ((targetRadius / oldRadius) * pulse);
 		// zoom(zoom);
+		// } else {
+		// break;
+		// }
 		//
 		// try {
-		// Thread.sleep(5);
-		// } catch(InterruptedException e) {
+		// Thread.sleep(50);
+		// } catch (InterruptedException e) {
 		// e.printStackTrace();
 		// }
 		// }
+		// endZoom();
 		// }
 		// }).start();
 	}

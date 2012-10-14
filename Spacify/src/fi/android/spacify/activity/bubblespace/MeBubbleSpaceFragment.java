@@ -74,7 +74,7 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 		popupAdapter = new PopupFragmentAdapter(getActivity().getSupportFragmentManager());
 		popupPager.setAdapter(popupAdapter);
 		bSurface = (BubbleSurface) content.findViewById(R.id.bubblespace_surface);
-		bSurface.setGesture(BubbleEvents.LONG_CLICK, onLongClick);
+		// bSurface.setGesture(BubbleEvents.LONG_CLICK, onLongClick);
 		// bSurface.setGesture(BubbleEvents.DOUBLE_CLICK, onDoubleClick);
 		bSurface.setGesture(BubbleEvents.SINGLE_TOUCH, onSingleTouch);
 		
@@ -133,8 +133,6 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 						bubble.x = b.x;
 						bubble.y = b.y;
 						
-						
-
 						int nx;
 						int ny;
 						int radius = (int) b.radius;
@@ -163,6 +161,7 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 
 						bSurface.addBubble(bubble);
 					}
+					bSurface.moveAllButTheseToCorner(b.getLinks());
 				}
 			} else {
 				tryClosingPopups();
@@ -230,11 +229,10 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 
 			@Override
 			public void run() {
-				synchronized(MeBubbleSpaceFragment.this) {
-					for(Bubble b : cms.getTopLevelBubbles()) {
-						bSurface.addBubble(b);
-					}
+				for (Bubble b : cms.getTopLevelBubbles()) {
+					bSurface.addBubble(b);
 				}
+				bSurface.startThreads();
 			}
 		});
 	}
@@ -271,6 +269,11 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 	@Override
 	public void remove(Bubble b) {
 		bSurface.removeBubble(b);
+	}
+
+	public void reset() {
+		bSurface.clear();
+		updateBubbles();
 	}
 
 }
