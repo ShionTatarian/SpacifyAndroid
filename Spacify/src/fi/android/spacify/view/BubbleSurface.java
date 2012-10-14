@@ -1,5 +1,6 @@
 package fi.android.spacify.view;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -72,6 +73,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	private boolean movementChange = false;
 	private Paint linePaint;
 	private Handler handler = new Handler();
+	private List<SideSlot> freeSlotList = new ArrayList<BubbleSurface.SideSlot>();
 
 	/**
 	 * Events supported by BubbleSurface.
@@ -170,6 +172,32 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	private void calculateSize(Canvas c) {
 		maxX = c.getWidth();
 		maxY = c.getHeight();
+
+		int x = 1;
+		int sizeFactor = 2;
+		while((x * ZOOM_DOWN_TO * sizeFactor) < maxX) {
+			SideSlot s = new SideSlot();
+			s.x = ((x * ZOOM_DOWN_TO * sizeFactor) + ((x - 1) * ZOOM_DOWN_TO));
+			s.y = ZOOM_DOWN_TO * sizeFactor;
+
+			synchronized(freeSlotList) {
+				freeSlotList.add(s);
+			}
+			x += 1;
+		}
+
+		int y = 2;
+		while((y * ZOOM_DOWN_TO * sizeFactor) < maxY) {
+			SideSlot s = new SideSlot();
+			s.x = maxX - (ZOOM_DOWN_TO * sizeFactor);
+			s.y = ((y * ZOOM_DOWN_TO * sizeFactor) + ((y - 2) * ZOOM_DOWN_TO));
+
+			synchronized(freeSlotList) {
+				freeSlotList.add(s);
+			}
+			y += 1;
+		}
+
 	}
 
 	private void clearCanvas(Canvas c) {
@@ -336,6 +364,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 						(int) event.getY(pointerIndex));
 				GestureInterface<Bubble> longClick = gestureMap.get(BubbleEvents.LONG_CLICK);
 				if(bHit != null && bHit.movement != BubbleMovement.MOVING) {
+					removeBubbleFromFreeSlots(bHit.getID());
 					bHit.animateOnTouch();
 					bHit.setTouchOffset(((int) event.getX(pointerIndex)),
 							(int) event.getY(pointerIndex));
@@ -550,6 +579,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 					if(b.getID() != bubble.getID()) {
 						if(b.movement != BubbleMovement.MOVING && isCollision(bubble, b)) {
 							autoMove(bubble, b);
+							removeBubbleFromFreeSlots(b.getID());
 							b.lockedToPlase = false;
 						} else if(b.movement == BubbleMovement.MOVING
 								&& bubble.movement == BubbleMovement.MOVING
@@ -683,6 +713,7 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 
 			@Override
 			public void run() {
+				removeBubbleFromFreeSlots(removed);
 				changingLists = true;
 				while(changingLists) {
 					if(!hitDetection && !drawing && !movementChange) {
@@ -703,6 +734,16 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 				startGraphics();
 			}
 		});
+	}
+
+	private void removeBubbleFromFreeSlots(final Integer id) {
+		synchronized(freeSlotList) {
+			for(SideSlot s : freeSlotList) {
+				if(s.bubbleList.remove(id)) {
+					return;
+				}
+			}
+		}
 	}
 
 	/**
@@ -788,40 +829,43 @@ public class BubbleSurface extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	public void moveAllButTheseToCorner(List<Integer> links) {
-		synchronized (bubbles) {
-			for (Bubble b : bubbles.values()) {
-				if (!links.contains(b.getID()) && !b.lockedToPlase) {
+		synchronized(bubbles) {
+			Iterator<Bubble> iterator = bubbles.values().iterator();
+			while(iterator.hasNext()) {
+				Bubble b = iterator.next();
+				if(!links.contains(b.getID()) && !b.lockedToPlase) {
 					b.lockedToPlase = true;
-					int[] array = getFreeSidePosition();
-					b.moveAndScaleTo(array[0], array[1], ZOOM_DOWN_TO);
+					SideSlot leastBubbles = getFreeSidePosition();
+					leastBubbles.bubbleList.add(b.getID());
+					b.moveAndScaleTo(leastBubbles.x, leastBubbles.y, ZOOM_DOWN_TO);
 				}
 			}
 		}
 	}
 
-	private int[] getFreeSidePosition() {
-		int[] array = new int[2];
-		// default position is top right corner if no other pace found
-		array[0] = maxX - ZOOM_DOWN_TO;
-		array[1] = ZOOM_DOWN_TO;
-
-		for (int x = 1; x < (maxX / ZOOM_DOWN_TO); x++) {
-			if (hitBubble(x * ZOOM_DOWN_TO, ZOOM_DOWN_TO / 2) == null) {
-				array[0] = x * ZOOM_DOWN_TO;
-				array[1] = ZOOM_DOWN_TO;
-				return array;
+	private SideSlot getFreeSidePosition() {
+		SideSlot leastBubbles = null;
+		synchronized(freeSlotList) {
+			for(SideSlot s : freeSlotList) {
+				if(s.bubbleList.size() == 0) {
+					leastBubbles = s;
+					break;
+				} else if((leastBubbles == null)
+						|| (leastBubbles != null && leastBubbles.bubbleList.size() > s.bubbleList
+								.size())) {
+					leastBubbles = s;
+				}
 			}
 		}
 
-		for (int y = 1; y < (maxY / ZOOM_DOWN_TO); y++) {
-			if (hitBubble(y * ZOOM_DOWN_TO, ZOOM_DOWN_TO / 2) == null) {
-				array[0] = maxX - ZOOM_DOWN_TO;
-				array[1] = y * ZOOM_DOWN_TO;
-				return array;
-			}
-		}
+		return leastBubbles;
+	}
 
-		return array;
+	private class SideSlot {
+
+		public int x = 0, y = 0;
+		public List<Integer> bubbleList = new ArrayList<Integer>();
+
 	}
 
 }

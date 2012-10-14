@@ -375,7 +375,7 @@ public class Bubble {
 		offsetY = y - tY;
 	}
 
-	private final double ANIMATION_TIME = 400d;
+	private final double ANIMATION_TIME = 500d;
 
 	public void moveTo(int nx, int ny) {
 		final int dx;
@@ -462,7 +462,7 @@ public class Bubble {
 				int oldY = y;
 				float oldRadius = radius;
 				while (movement != BubbleMovement.MOVING && pulse <= 1) {
-					pulse = ((System.currentTimeMillis() - start) / (5 * ANIMATION_TIME));
+					pulse = ((System.currentTimeMillis() - start) / ANIMATION_TIME);
 
 					x = oldX - (int) Math.floor(dx * pulse);
 					y = oldY - (int) Math.floor(dy * pulse);

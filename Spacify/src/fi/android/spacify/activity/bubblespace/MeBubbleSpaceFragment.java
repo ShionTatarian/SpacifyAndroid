@@ -1,5 +1,6 @@
 package fi.android.spacify.activity.bubblespace;
 
+import java.util.List;
 import java.util.Random;
 import java.util.Stack;
 
@@ -125,9 +126,9 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 		@Override
 		public void onGestureDetected(Bubble b, MotionEvent ev) {
 			if(b != null) {
-				if(bSurface.hasChildsVisible(b)) {
-					bSurface.removeChildren(b);
-				} else {
+				// if(bSurface.hasChildsVisible(b)) {
+				// bSurface.removeChildren(b);
+				// } else {
 					Random r = new Random();
 					for(Bubble bubble : cms.getBubbles(b.getLinks())) {
 						bubble.x = b.x;
@@ -161,8 +162,10 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 
 						bSurface.addBubble(bubble);
 					}
-					bSurface.moveAllButTheseToCorner(b.getLinks());
-				}
+				List<Integer> list = b.getLinks();
+				list.add(b.getID());
+				bSurface.moveAllButTheseToCorner(list);
+				// }
 			} else {
 				tryClosingPopups();
 			}
