@@ -12,4 +12,7 @@
     <dimen name="popup_control_width">200dp</dimen>
     <dimen name="popup_control_image_size">30dp</dimen>
 
+    <!-- BubbleSurface -->
+    <dimen name="command_circle">80dp</dimen>
+
 </resources>

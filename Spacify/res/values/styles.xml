@@ -3,4 +3,10 @@
 
     <style name="AppTheme" parent="android:Theme.Light" />
 
+    <dimen name="text_small">8dp</dimen>
+    <dimen name="text_medium">12dp</dimen>
+    <dimen name="text_normal">16dp</dimen>
+    <dimen name="text_large">20dp</dimen>
+    <dimen name="text_huge">24dp</dimen>
+
 </resources>

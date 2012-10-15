@@ -1,5 +1,6 @@
 package fi.android.spacify.gesture;
 
+import android.util.Log;
 import android.view.MotionEvent;
 
 public class LongClickGesture<T> extends SimpleTouchGesture<T> {
@@ -20,6 +21,7 @@ public class LongClickGesture<T> extends SimpleTouchGesture<T> {
 			while (!cancel && System.currentTimeMillis() < downTime + LONG_CLICK_TIME) {
 				synchronized (this) {
 					try {
+						Log.d("LongClickGesture", "Waiting");
 						wait(50);
 					} catch (InterruptedException e) {
 						e.printStackTrace();

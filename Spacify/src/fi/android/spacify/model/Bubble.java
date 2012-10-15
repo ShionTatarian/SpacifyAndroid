@@ -375,7 +375,7 @@ public class Bubble {
 		offsetY = y - tY;
 	}
 
-	private final double ANIMATION_TIME = 500d;
+	public static final double ANIMATION_TIME = 500d;
 
 	public void moveTo(int nx, int ny) {
 		final int dx;
@@ -539,5 +539,6 @@ public class Bubble {
 		// }
 		// }).start();
 	}
+
 
 }
