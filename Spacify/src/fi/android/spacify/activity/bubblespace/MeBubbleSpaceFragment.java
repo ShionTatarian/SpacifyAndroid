@@ -231,16 +231,16 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 	};
 
 	public void updateBubbles() {
-		ws.postWork(new Runnable() {
-
-			@Override
-			public void run() {
-				for (Bubble b : cms.getTopLevelBubbles()) {
-					bSurface.addBubble(b);
-				}
-				bSurface.startThreads();
-			}
-		});
+		// ws.postWork(new Runnable() {
+		//
+		// @Override
+		// public void run() {
+		// for (Bubble b : cms.getTopLevelBubbles()) {
+		// bSurface.addBubble(b);
+		// }
+		// bSurface.startThreads();
+		// }
+		// });
 	}
 
 	@Override

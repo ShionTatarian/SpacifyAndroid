@@ -17,6 +17,7 @@ import fi.android.service.web.WebServiceException;
 import fi.android.spacify.R;
 import fi.android.spacify.db.BubbleDatabase;
 import fi.android.spacify.model.Bubble;
+import fi.android.spacify.view.BubbleView;
 import fi.spacify.android.util.Events;
 import fi.spacify.android.util.WebPipes;
 
@@ -106,12 +107,12 @@ public class ContentManagementService extends BaseService {
 	 * 
 	 * @return List of Bubble objects.
 	 */
-	public List<Bubble> getTopLevelBubbles() {
+	public List<BubbleView> getTopLevelBubbles() {
 		Cursor c = db.getTopLevelBubblesCursor();
-		List<Bubble> bubbles = new ArrayList<Bubble>();
+		List<BubbleView> bubbles = new ArrayList<BubbleView>();
 		c.moveToFirst();
 		while(!c.isAfterLast()) {
-			bubbles.add(new Bubble(c));
+			bubbles.add(new BubbleView(context, c));
 			c.moveToNext();
 		}
 		c.close();

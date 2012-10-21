@@ -163,7 +163,7 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 	public Cursor getTopLevelBubblesCursor() {
 		SQLiteDatabase db = getReadableDatabase();
 		String selection = "";
-		selection = BubbleColumns.PRIORITY + " > 5";
+		selection = BubbleColumns.PRIORITY + " > 0";
 		
 		return db.query(BUBBLE_TABLE, null, selection, null, null, null,
 				BubbleColumns.TITLE);
