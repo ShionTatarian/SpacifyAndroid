@@ -15,4 +15,8 @@
     <!-- BubbleSurface -->
     <dimen name="command_circle">80dp</dimen>
 
+    <!-- Search -->
+    <dimen name="search_box_height">100dp</dimen>
+    <dimen name="search_button_width">25dp</dimen>
+
 </resources>

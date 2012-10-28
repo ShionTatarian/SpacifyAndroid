@@ -13,34 +13,6 @@
     </FrameLayout>
 
     <Button
-        android:id="@+id/button_events"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="25dp"
-        android:layout_marginRight="-75dp"
-        android:layout_toLeftOf="@+id/button_me"
-        android:background="@drawable/greenball"
-        android:gravity="top|left"
-        android:onClick="onEventsClick"
-        android:padding="20dp"
-        android:text="EVENTS" />
-
-    <Button
-        android:id="@+id/button_info"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="25dp"
-        android:layout_marginLeft="-75dp"
-        android:layout_toRightOf="@+id/button_me"
-        android:background="@drawable/greenball"
-        android:gravity="top|right"
-        android:onClick="onInfoClick"
-        android:padding="20dp"
-        android:text="INFO" />
-
-    <Button
         android:id="@+id/button_me"
         android:layout_width="200dp"
         android:layout_height="200dp"
@@ -52,5 +24,56 @@
         android:onClick="onMeClick"
         android:paddingTop="50dp"
         android:text="ME" />
+
+    <ImageView
+        android:id="@+id/search_button"
+        android:layout_width="@dimen/search_button_width"
+        android:layout_height="@dimen/search_box_height"
+        android:layout_toLeftOf="@+id/search_layout"
+        android:background="@color/white_transparent_50"
+        android:onClick="onSearchClick"
+        android:src="@android:drawable/ic_search_category_default" />
+
+    <LinearLayout
+        android:id="@+id/search_layout"
+        android:layout_width="300dp"
+        android:layout_height="@dimen/search_box_height"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:orientation="vertical" >
+
+        <EditText
+            android:id="@+id/search_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <Gallery
+            android:id="@+id/search_bubble_gallery"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/button_events"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:background="@drawable/greenball"
+        android:onClick="onEventsClick"
+        android:padding="20dp"
+        android:text="EVENTS" />
+
+    <Button
+        android:id="@+id/button_info"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/greenball"
+        android:onClick="onInfoClick"
+        android:padding="20dp"
+        android:text="INFO" />
 
 </RelativeLayout>

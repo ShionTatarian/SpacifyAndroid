@@ -1,7 +1,8 @@
 package fi.android.spacify.activity;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 import android.content.Context;
@@ -20,20 +21,21 @@ import fi.android.service.WorkService;
 import fi.android.spacify.R;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BubbleView;
+import fi.android.spacify.view.ConnectionLayout;
 import fi.spacify.android.util.Events;
 
 public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	private final WorkService ws = WorkService.getInstance();
 	private final ContentManagementService cms = ContentManagementService.getInstance();
-	private List<BubbleView> list = new ArrayList<BubbleView>();
-	private ViewGroup frame;
+	private Map<Integer, BubbleView> list = new HashMap<Integer, BubbleView>();
+	private ConnectionLayout frame;
 	private int height, width;
 	private BubbleView singleTouched;
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		frame = (ViewGroup) inflater.inflate(R.layout.bubble_frame, container, false);
+		frame = (ConnectionLayout) inflater.inflate(R.layout.bubble_frame, container, false);
 		frame.setOnTouchListener(this);
 		DisplayMetrics metrics = new DisplayMetrics();
 		Display display = getActivity().getWindowManager().getDefaultDisplay();
@@ -43,13 +45,14 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		width = metrics.widthPixels;
 
 		updateBubbles();
+		updateConnections();
 
 		return frame;
 	}
 
 	private void updateBubbles() {
 		Random r = new Random();
-		for(BubbleView b : list) {
+		for(BubbleView b : list.values()) {
 			b.move(100 * r.nextInt(5), 100 * r.nextInt(5));
 			b.setOnTouchListener(this);
 			frame.addView(b);
@@ -77,6 +80,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
+		updateConnections();
 		float x = event.getRawX();
 		float y = event.getRawY();
 
@@ -105,6 +109,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 					if(bv.getID() != firstTouched.getID()) {
 						firstTouched = null;
 					}
+				} else {
+					onEmptyClick();
 				}
 
 				break;
@@ -155,7 +161,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 			@Override
 			public void run() {
-				for(BubbleView b : list) {
+				for(BubbleView b : list.values()) {
 					LayoutParams p1 = (LayoutParams) bv.getLayoutParams();
 					LayoutParams p2 = (LayoutParams) b.getLayoutParams();
 					if(isHit(p1, p2)) {
@@ -228,9 +234,46 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	public void setBubbleCursor(Cursor c, Context context) {
 		c.moveToFirst();
 		while(!c.isAfterLast()) {
-			list.add(new BubbleView(context, c));
+			BubbleView bv = new BubbleView(context, c);
+			list.put(bv.getID(), bv);
 			c.moveToNext();
 		}
 		c.close();
 	}
+	
+	private void updateConnections() {
+		ws.postWork(0, new Runnable() {
+
+			@Override
+			public void run() {
+				int[][] connections = new int[list.size()][4];
+				int i = 0;
+				Iterator<BubbleView> iterator = list.values().iterator();
+				while(iterator.hasNext()) {
+					BubbleView b1 = iterator.next();
+					for(int id : b1.getLinks()) {
+						BubbleView b2 = list.get(id);
+						if(b2 != null) {
+							if(b1 != null) {
+								android.widget.FrameLayout.LayoutParams p1 = (android.widget.FrameLayout.LayoutParams) b1
+										.getLayoutParams();
+								android.widget.FrameLayout.LayoutParams p2 = (android.widget.FrameLayout.LayoutParams) b2
+										.getLayoutParams();
+								connections[i][0] = (p1.leftMargin + (p1.width / 2));
+								connections[i][1] = (p1.topMargin + (p1.height / 2));
+								connections[i][2] = (p2.leftMargin + (p2.width / 2));
+								connections[i][3] = (p2.topMargin + (p2.height / 2));
+							}
+						}
+					}
+					frame.setConnections(connections);
+				}
+			}
+		});
+	}
+
+	private void onEmptyClick() {
+		((BubbleActivity) getActivity()).onEmptyClick();
+	}
+
 }
