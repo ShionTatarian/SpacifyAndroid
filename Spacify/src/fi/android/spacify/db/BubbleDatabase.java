@@ -169,6 +169,14 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 				BubbleColumns.TITLE);
 	}
 
+	public Cursor getBubblesWithPriority(int priority) {
+		SQLiteDatabase db = getReadableDatabase();
+		String selection = "";
+		selection = BubbleColumns.PRIORITY + " > " + priority;
+
+		return db.query(BUBBLE_TABLE, null, selection, null, null, null, BubbleColumns.TITLE);
+	}
+
 	public Cursor getLinkedBubblesCursor(List<Integer> links) {
 		SQLiteDatabase db = getReadableDatabase();
 		

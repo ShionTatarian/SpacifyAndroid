@@ -45,7 +45,6 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 	private final WorkService ws = WorkService.getInstance();
 
 	private BubbleSurface bSurface;
-	private PopupControlFragment controlPopup;
 	private ViewPager popupPager;
 	private PopupFragmentAdapter popupAdapter;
 
@@ -79,8 +78,6 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 		// bSurface.setGesture(BubbleEvents.DOUBLE_CLICK, onDoubleClick);
 		bSurface.setGesture(BubbleEvents.SINGLE_TOUCH, onSingleTouch);
 
-		controlPopup = new PopupControlFragment();
-		controlPopup.setCallback(this);
 		cms.fetchBubbles();
 
 		return content;
@@ -207,16 +204,11 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 
 		@Override
 		public void onGestureDetected(Bubble b, MotionEvent ev) {
-			controlPopup.setBubble(b);
 			vibrator.vibrate(VIBRATION_TIME);
 			FragmentManager fm = getActivity().getSupportFragmentManager();
 			FragmentTransaction ft = fm.beginTransaction();
 			if (b != null) {
-				ft.replace(R.id.popup_controls, controlPopup);
-				visibleFragments.add(controlPopup);
 			} else {
-				ft.replace(R.id.popup_controls, controlPopup);
-				visibleFragments.add(controlPopup);
 			}
 			ft.commit();
 		}

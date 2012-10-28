@@ -120,6 +120,10 @@ public class ContentManagementService extends BaseService {
 		return bubbles;
 	}
 
+	public Cursor getBubblesWithPriority(int priority) {
+		return db.getBubblesWithPriority(priority);
+	}
+
 	public List<Bubble> getBubbles(List<Integer> links) {
 		Cursor c = db.getLinkedBubblesCursor(links);
 		List<Bubble> bubbles = new ArrayList<Bubble>();

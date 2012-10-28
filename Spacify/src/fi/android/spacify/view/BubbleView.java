@@ -9,9 +9,12 @@ import org.json.JSONObject;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.util.Log;
+import android.view.Gravity;
 import android.widget.FrameLayout.LayoutParams;
 import android.widget.TextView;
+import fi.android.spacify.R;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
 
 @SuppressWarnings("javadoc")
@@ -40,11 +43,13 @@ public class BubbleView extends TextView {
 		public static final int AUTOMATIC = 2;
 	}
 
+	private final int PADDING = 15;
+
 	public static final double SPEED = 0.3, SIZE_FACTOR = 10;
 
 	public int movement = BubbleMovement.INERT;
 	public int x = 0, y = 0;
-	public float radius = 30;
+	public float diameter = 100;
 	public boolean linkStatusChanged = false;
 	public boolean lockedToPlase = false;
 
@@ -55,6 +60,12 @@ public class BubbleView extends TextView {
 	private long latitude = 0, longitude = 0;
 
 	private void init() {
+		super.setLayoutParams(new LayoutParams(100, 100));
+		setBackgroundResource(R.drawable.lightblueball);
+		setTextColor(Color.WHITE);
+		setGravity(Gravity.CENTER);
+		setPadding(PADDING, PADDING, PADDING, PADDING);
+		zoom(1);
 	}
 
 	public BubbleView(Context context, int id) {
@@ -86,6 +97,7 @@ public class BubbleView extends TextView {
 			}
 			if (json.has(BubbleJSON.title)) {
 				this.title = json.getString(BubbleJSON.title);
+				setText(title);
 			}
 			if (json.has(BubbleJSON.titleImageUrl)) {
 				this.titleImageUrl = json.getString(BubbleJSON.titleImageUrl);
@@ -105,6 +117,7 @@ public class BubbleView extends TextView {
 		super(context);
 		id = c.getInt(c.getColumnIndex(BubbleColumns.ID));
 		title = c.getString(c.getColumnIndex(BubbleColumns.TITLE));
+		setText(title);
 		style = c.getString(c.getColumnIndex(BubbleColumns.STYLE));
 		contents = c.getString(c.getColumnIndex(BubbleColumns.CONTENTS));
 		priority = c.getInt(c.getColumnIndex(BubbleColumns.PRIORITY));
@@ -279,12 +292,29 @@ public class BubbleView extends TextView {
 	public void move(int x, int y) {
 
 		LayoutParams params = (LayoutParams) getLayoutParams();
-		if(params == null) {
-			params = new LayoutParams(100, 100);
-		}
 		params.leftMargin = x;
 		params.topMargin = y;
 		setLayoutParams(params);
+	}
+
+	public void zoom(double d) {
+		LayoutParams params = (LayoutParams) getLayoutParams();
+		params.width = (int) (diameter * d);
+		params.height = (int) (diameter * d);
+		setLayoutParams(params);
+	}
+
+	public void onTouchDown() {
+		
+	}
+
+	public void onTouchUp() {
+		endZoom();
+	}
+
+	public void endZoom() {
+		LayoutParams params = (LayoutParams) getLayoutParams();
+		diameter = params.width;
 	}
 
 }
