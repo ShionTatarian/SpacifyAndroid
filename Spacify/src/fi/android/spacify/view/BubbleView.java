@@ -15,6 +15,7 @@ import android.view.Gravity;
 import android.widget.FrameLayout.LayoutParams;
 import android.widget.TextView;
 import fi.android.spacify.R;
+import fi.android.spacify.activity.BubbleFragment;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
 
 @SuppressWarnings("javadoc")
@@ -23,6 +24,7 @@ public class BubbleView extends TextView {
 	private final String TAG = "Bubble";
 
 	public static final double ANIMATION_TIME = 500d;
+	public static final int MOVEMENT_TOUCH_TRESHOLD = 10;
 
 	public static class BubbleJSON {
 		public static final String debugID = "debugId";
@@ -290,11 +292,15 @@ public class BubbleView extends TextView {
 	}
 
 	public void move(int x, int y) {
-
 		LayoutParams params = (LayoutParams) getLayoutParams();
 		params.leftMargin = x;
 		params.topMargin = y;
 		setLayoutParams(params);
+
+		double m = BubbleFragment.distance(x, y, startX, startY);
+		if(m >= moved) {
+			moved = m;
+		}
 	}
 
 	public void zoom(double d) {
@@ -304,11 +310,19 @@ public class BubbleView extends TextView {
 		setLayoutParams(params);
 	}
 
+	private int startX, startY;
+	public double moved = 0;
+
 	public void onTouchDown() {
-		
+		moved = 0;
+		movement = BubbleMovement.MOVING;
+		LayoutParams params = (LayoutParams) getLayoutParams();
+		startX = params.leftMargin;
+		startY = params.topMargin;
 	}
 
 	public void onTouchUp() {
+		movement = BubbleMovement.INERT;
 		endZoom();
 	}
 

@@ -60,6 +60,7 @@ public class BubbleActivity extends BaseActivity {
 		
 		root = (ViewGroup) findViewById(R.id.bubble_root);
 		changeFragment(R.id.bubble_root, activeBubbleFragment);
+		cms.fetchBubbles();
 	}
 
 	public void onMeClick(View view) {

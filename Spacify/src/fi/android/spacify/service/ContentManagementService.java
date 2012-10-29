@@ -124,12 +124,12 @@ public class ContentManagementService extends BaseService {
 		return db.getBubblesWithPriority(priority);
 	}
 
-	public List<Bubble> getBubbles(List<Integer> links) {
+	public List<BubbleView> getBubbles(List<Integer> links) {
 		Cursor c = db.getLinkedBubblesCursor(links);
-		List<Bubble> bubbles = new ArrayList<Bubble>();
+		List<BubbleView> bubbles = new ArrayList<BubbleView>();
 		c.moveToFirst();
 		while(!c.isAfterLast()) {
-			bubbles.add(new Bubble(c));
+			bubbles.add(new BubbleView(context, c));
 			c.moveToNext();
 		}
 		c.close();

@@ -2,6 +2,7 @@ package fi.android.spacify.activity;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -10,6 +11,7 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Message;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -17,7 +19,6 @@ import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.FrameLayout.LayoutParams;
-import fi.android.service.WorkService;
 import fi.android.spacify.R;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BubbleView;
@@ -26,7 +27,8 @@ import fi.spacify.android.util.Events;
 
 public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
-	private final WorkService ws = WorkService.getInstance();
+	private final String TAG = "BubbleFragment";
+
 	private final ContentManagementService cms = ContentManagementService.getInstance();
 	private Map<Integer, BubbleView> list = new HashMap<Integer, BubbleView>();
 	private ConnectionLayout frame;
@@ -66,7 +68,6 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 		switch (Events.values()[msg.what]) {
 			case ALL_BUBBLES_FETCHED:
-				updateBubbles();
 				return true;
 			default:
 				break;
@@ -101,6 +102,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			case MotionEvent.ACTION_DOWN:
 			case MotionEvent.ACTION_POINTER_DOWN:
 				if(bv != null) {
+					bv.onTouchDown();
 					dx = params.leftMargin - x + (params.width / 2);
 					dy = params.topMargin - y + (params.height / 2);
 					bv.offsetX = (int) dx;
@@ -147,6 +149,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				initialD = -1;
 
 				if(bv != null) {
+					if(bv.moved <= BubbleView.MOVEMENT_TOUCH_TRESHOLD) {
+						onSingleTouch(bv);
+					}
 					bv.onTouchUp();
 				}
 
@@ -156,11 +161,85 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		return true;
 	}
 
-	private void testHit(final BubbleView bv) {
-		ws.postWork(new Runnable() {
+	public void onSingleTouch(BubbleView bv) {
+		Log.d(TAG, "onSingleTouch");
+		addSubBubbles(bv);
+	}
 
-			@Override
-			public void run() {
+	private void addSubBubbles(BubbleView bv) {
+		Random r = new Random();
+		if(hasChildsVisible(bv)) {
+			removeBubbles(bv.getLinks());
+			return;
+		}
+
+		for(final BubbleView nBubble : cms.getBubbles(bv.getLinks())) {
+			if(!list.containsKey(nBubble.getID())) {
+				Log.d(TAG, "New Bubble [" + nBubble.getTitle() + "]");
+				LayoutParams p = (LayoutParams) bv.getLayoutParams();
+				LayoutParams newParams = new LayoutParams(p);
+
+				int nx;
+				int ny;
+				int radius = (int) (bv.diameter / 2);
+				if(r.nextBoolean()) {
+					// positive change
+					if(r.nextBoolean()) {
+						// positive y change
+						ny = radius + r.nextInt(radius);
+					} else {
+						// negative y change
+						ny = -radius - r.nextInt(radius);
+					}
+					nx = radius + r.nextInt(radius);
+				} else {
+					// negative x change
+					if(r.nextBoolean()) {
+						// positive y change
+						ny = radius + r.nextInt(radius);
+					} else {
+						ny = -radius - r.nextInt(radius);
+					}
+					nx = -radius - r.nextInt(radius);
+				}
+
+				newParams.leftMargin = p.leftMargin + nx;
+				newParams.topMargin = p.topMargin + ny;
+				newParams.width = 100;
+				newParams.height = 100;
+				nBubble.setLayoutParams(newParams);
+				addBubble(nBubble);
+			}
+		}
+	}
+
+	private void removeBubbles(List<Integer> links) {
+		for(int id : links) {
+			removeBubble(list.get(id));
+		}
+	}
+
+	public void removeBubble(BubbleView bubbleView) {
+		if(bubbleView != null) {
+			frame.removeView(bubbleView);
+			list.remove(bubbleView.getID());
+			updateConnections();
+		}
+	}
+
+	public void addBubble(BubbleView bv) {
+		if(!list.containsKey(bv.getID())) {
+			bv.setOnTouchListener(this);
+			list.put(bv.getID(), bv);
+			frame.addView(bv);
+			updateConnections();
+		} else {
+			Log.w(TAG, "Could not add bubble [" + bv.getTitle() + "], already in view");
+		}
+
+	}
+
+	private void testHit(final BubbleView bv) {
 				for(BubbleView b : list.values()) {
 					LayoutParams p1 = (LayoutParams) bv.getLayoutParams();
 					LayoutParams p2 = (LayoutParams) b.getLayoutParams();
@@ -168,8 +247,6 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 						autoMove(b, p1, p2);
 					}
 				}
-			}
-		});
 	}
 
 	private boolean isHit(LayoutParams p1, LayoutParams p2) {
@@ -224,7 +301,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		return distance(b1.leftMargin, b1.topMargin, b2.leftMargin, b2.topMargin);
 	}
 
-	private double distance(float x, float y, float bx, float by) {
+	public static double distance(float x, float y, float bx, float by) {
 		double dx2 = Math.pow(x - bx, 2);
 		double dy2 = Math.pow(y - by, 2);
 
@@ -241,35 +318,38 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		c.close();
 	}
 	
-	private void updateConnections() {
-		ws.postWork(0, new Runnable() {
-
-			@Override
-			public void run() {
-				int[][] connections = new int[list.size()][4];
-				int i = 0;
-				Iterator<BubbleView> iterator = list.values().iterator();
-				while(iterator.hasNext()) {
-					BubbleView b1 = iterator.next();
-					for(int id : b1.getLinks()) {
-						BubbleView b2 = list.get(id);
-						if(b2 != null) {
-							if(b1 != null) {
-								android.widget.FrameLayout.LayoutParams p1 = (android.widget.FrameLayout.LayoutParams) b1
-										.getLayoutParams();
-								android.widget.FrameLayout.LayoutParams p2 = (android.widget.FrameLayout.LayoutParams) b2
-										.getLayoutParams();
-								connections[i][0] = (p1.leftMargin + (p1.width / 2));
-								connections[i][1] = (p1.topMargin + (p1.height / 2));
-								connections[i][2] = (p2.leftMargin + (p2.width / 2));
-								connections[i][3] = (p2.topMargin + (p2.height / 2));
-							}
-						}
-					}
-					frame.setConnections(connections);
+	public boolean hasChildsVisible(BubbleView bv) {
+		for(int id : bv.getLinks()) {
+			if(id != bv.getID()) {
+				BubbleView child = list.get(id);
+				if(child == null) {
+					return false;
 				}
 			}
-		});
+		}
+		return true;
+	}
+
+	private void updateConnections() {
+		int[][] connections = new int[list.size()][4];
+		int i = 0;
+		Iterator<BubbleView> iterator = list.values().iterator();
+		while(iterator.hasNext()) {
+			BubbleView b1 = iterator.next();
+			for(int id : b1.getLinks()) {
+				BubbleView b2 = list.get(id);
+				if(b2 != null && b1 != null && connections.length > i) {
+					LayoutParams p1 = (LayoutParams) b1.getLayoutParams();
+					LayoutParams p2 = (LayoutParams) b2.getLayoutParams();
+					connections[i][0] = (p1.leftMargin + (p1.width / 2));
+					connections[i][1] = (p1.topMargin + (p1.height / 2));
+					connections[i][2] = (p2.leftMargin + (p2.width / 2));
+					connections[i][3] = (p2.topMargin + (p2.height / 2));
+					i++;
+				}
+			}
+			frame.setConnections(connections);
+		}
 	}
 
 	private void onEmptyClick() {

@@ -1,7 +1,6 @@
 package fi.android.spacify.activity.bubblespace;
 
 import java.util.List;
-import java.util.Random;
 import java.util.Stack;
 
 import android.app.Activity;
@@ -124,44 +123,44 @@ public class MeBubbleSpaceFragment extends BaseFragment implements ControlCallba
 				// if(bSurface.hasChildsVisible(b)) {
 				// bSurface.removeChildren(b);
 				// } else {
-				Random r = new Random();
-				for (final Bubble bubble : cms.getBubbles(b.getLinks())) {
-					bubble.x = b.x;
-					bubble.y = b.y;
-
-					int nx;
-					int ny;
-					int radius = (int) b.radius;
-					if (r.nextBoolean()) {
-						// positive change
-						if (r.nextBoolean()) {
-							// positive y change
-							ny = radius + r.nextInt(radius);
-						} else {
-							// negative y change
-							ny = -radius - r.nextInt(radius);
-						}
-						nx = radius + r.nextInt(radius);
-					} else {
-						// negative x change
-						if (r.nextBoolean()) {
-							// positive y change
-							ny = radius + r.nextInt(radius);
-						} else {
-							ny = -radius - r.nextInt(radius);
-						}
-						nx = -radius - r.nextInt(radius);
-					}
-					bubble.moveTo(bubble.x + nx, bubble.y + ny);
-
-					ws.postWork(new Runnable() {
-
-						@Override
-						public void run() {
-							bSurface.addBubble(bubble);
-						}
-					});
-				}
+				// Random r = new Random();
+				// for (final Bubble bubble : cms.getBubbles(b.getLinks())) {
+				// bubble.x = b.x;
+				// bubble.y = b.y;
+				//
+				// int nx;
+				// int ny;
+				// int radius = (int) b.radius;
+				// if (r.nextBoolean()) {
+				// // positive change
+				// if (r.nextBoolean()) {
+				// // positive y change
+				// ny = radius + r.nextInt(radius);
+				// } else {
+				// // negative y change
+				// ny = -radius - r.nextInt(radius);
+				// }
+				// nx = radius + r.nextInt(radius);
+				// } else {
+				// // negative x change
+				// if (r.nextBoolean()) {
+				// // positive y change
+				// ny = radius + r.nextInt(radius);
+				// } else {
+				// ny = -radius - r.nextInt(radius);
+				// }
+				// nx = -radius - r.nextInt(radius);
+				// }
+				// bubble.moveTo(bubble.x + nx, bubble.y + ny);
+				//
+				// ws.postWork(new Runnable() {
+				//
+				// @Override
+				// public void run() {
+				// bSurface.addBubble(bubble);
+				// }
+				// });
+				// }
 				List<Integer> list = b.getLinks();
 				list.add(b.getID());
 				bSurface.moveAllButTheseToCorner(list);
