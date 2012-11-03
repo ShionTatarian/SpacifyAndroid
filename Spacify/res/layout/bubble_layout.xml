@@ -66,14 +66,14 @@
         android:text="EVENTS" />
 
     <Button
-        android:id="@+id/button_info"
+        android:id="@+id/button_people"
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:background="@drawable/greenball"
-        android:onClick="onInfoClick"
+        android:onClick="onPeopleClick"
         android:padding="20dp"
-        android:text="INFO" />
+        android:text="People" />
 
 </RelativeLayout>

@@ -1,11 +1,13 @@
 package fi.android.spacify.fragment;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -37,9 +39,16 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	private BubbleView singleTouched;
 
 	@Override
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
+		updateConnections();
+	}
+
+	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		frame = (ConnectionLayout) inflater.inflate(R.layout.bubble_frame, container, false);
 		frame.setOnTouchListener(this);
+
 		DisplayMetrics metrics = new DisplayMetrics();
 		Display display = getActivity().getWindowManager().getDefaultDisplay();
 		display.getMetrics(metrics);
@@ -56,8 +65,17 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	private void updateBubbles() {
 		Random r = new Random();
 		for(BubbleView b : list.values()) {
-			b.move(100 * r.nextInt(5), 100 * r.nextInt(5));
 			b.setOnTouchListener(this);
+			if(b.x <= 0 && b.y <= 0) {
+				int radius = b.getRadius();
+				int xn = width / radius;
+				int yn = height / radius;
+				int x = radius * r.nextInt(xn);
+				int y = radius * r.nextInt(yn - 1);
+
+				b.move(x, y);
+			}
+			
 			frame.addView(b);
 		}
 
@@ -119,8 +137,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				break;
 			case MotionEvent.ACTION_MOVE:
 				if(bv != null) {
-					bv.move((int) (x + bv.offsetX - (bv.getWidth() / 2)),
-							(int) (y + bv.offsetY - (bv.getHeight() / 2)));
+					bv.move((int) x, (int) y);
 					testHit(bv);
 				}
 
@@ -177,41 +194,10 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		for(final BubbleView nBubble : cms.getBubbles(bv.getLinks())) {
 			if(!list.containsKey(nBubble.getID())) {
 				Log.d(TAG, "New Bubble [" + nBubble.getTitle() + "]");
-				LayoutParams p = (LayoutParams) bv.getLayoutParams();
-				LayoutParams newParams = new LayoutParams(p);
-
-				int nx;
-				int ny;
-				int radius = (int) (bv.diameter / 2);
-				if(r.nextBoolean()) {
-					// positive change
-					if(r.nextBoolean()) {
-						// positive y change
-						ny = radius + r.nextInt(radius);
-					} else {
-						// negative y change
-						ny = -radius - r.nextInt(radius);
-					}
-					nx = radius + r.nextInt(radius);
-				} else {
-					// negative x change
-					if(r.nextBoolean()) {
-						// positive y change
-						ny = radius + r.nextInt(radius);
-					} else {
-						ny = -radius - r.nextInt(radius);
-					}
-					nx = -radius - r.nextInt(radius);
-				}
-
-				newParams.leftMargin = p.leftMargin + nx;
-				newParams.topMargin = p.topMargin + ny;
-				newParams.width = 100;
-				newParams.height = 100;
-				nBubble.setLayoutParams(newParams);
 				addBubble(nBubble);
 			}
 		}
+		updateConnections();
 	}
 
 	private void removeBubbles(List<Integer> links) {
@@ -223,7 +209,10 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	public void removeBubble(BubbleView bubbleView) {
 		if(bubbleView != null) {
 			frame.removeView(bubbleView);
-			list.remove(bubbleView.getID());
+			BubbleView removed = list.remove(bubbleView.getID());
+
+			cms.saveBubble(removed);
+
 			updateConnections();
 		}
 	}
@@ -241,28 +230,33 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	private void testHit(final BubbleView bv) {
-				for(BubbleView b : list.values()) {
-					LayoutParams p1 = (LayoutParams) bv.getLayoutParams();
-					LayoutParams p2 = (LayoutParams) b.getLayoutParams();
-					if(isHit(p1, p2)) {
-						autoMove(b, p1, p2);
-					}
-				}
+		for(BubbleView b : list.values()) {
+			LayoutParams p1 = (LayoutParams) bv.getLayoutParams();
+			LayoutParams p2 = (LayoutParams) b.getLayoutParams();
+			if(isHit(p1, p2) && b.getID() != bv.getID()) {
+				autoMove(bv, b);
+			}
+		}
 	}
 
 	private boolean isHit(LayoutParams p1, LayoutParams p2) {
-		double a = (p1.width + p2.width) / 2;
+		double a = ((p1.width + p2.width) / 2);
 		double dx = p1.leftMargin - p2.leftMargin;
 		double dy = p1.topMargin - p2.topMargin;
 		return a * a > ((dx * dx) + (dy * dy));
 	}
 
-	private void autoMove(final View v, LayoutParams moving, final LayoutParams pushed) {
-		double distance = distance(moving, pushed);
+	private void autoMove(final BubbleView bv, BubbleView pushed) {
+		int[] movingPos = bv.getViewPosition();
+		int[] pushedPos = pushed.getViewPosition();
+		double distance = distance(movingPos[0], movingPos[1], pushedPos[0], pushedPos[1]);
 
-		double dx = moving.leftMargin - pushed.leftMargin;
-		double dy = moving.topMargin - pushed.topMargin;
-		float radius = pushed.width / 2 > moving.width / 2 ? pushed.width / 2 : moving.width / 2;
+		int movingRadius = bv.getRadius();
+		int pushedRadius = pushed.getRadius();
+
+		double dx = movingPos[0] - pushedPos[0];
+		double dy = movingPos[1] - pushedPos[1];
+		float radius = pushedRadius > movingRadius ? pushedRadius : movingRadius;
 		double move = Math.abs(distance - radius);
 
 		double factor = 1;
@@ -276,26 +270,35 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			factor = dx > dy ? Math.abs(dx / dy) : 1 - Math.abs(dy / dx);
 		}
 
+		int x = 0;
 		if(dx > 0) {
-			pushed.leftMargin -= move * factor;
-		} else if(dx < 0) {
-			pushed.leftMargin += move * factor;
+			x = (int) (pushedPos[0] - (move * factor));
+		} else {
+			x = (int) (pushedPos[0] + (move * factor));
 		}
 
+		int y = 0;
 		double rFactor = 1 - factor;
 		if(dy > 0) {
-			pushed.topMargin -= move * rFactor;
-		} else if(dy < 0) {
-			pushed.topMargin += move * rFactor;
+			y = (int) (pushedPos[1] - (move * rFactor));
+		} else {
+			y = (int) (pushedPos[1] + (move * rFactor));
 		}
 
-		v.post(new Runnable() {
+		// Don't let it go over
+		if(x + pushedRadius > BubbleActivity.width) {
+			x = (BubbleActivity.width - pushedRadius);
+		} else if(x - pushedRadius < 0) {
+			x = pushedRadius;
+		}
 
-			@Override
-			public void run() {
-				v.setLayoutParams(pushed);
-			}
-		});
+		if(y + pushedRadius > BubbleActivity.height) {
+			y = (BubbleActivity.height - pushedRadius);
+		} else if(y - pushedRadius < 0) {
+			y = pushedRadius;
+		}
+
+		pushed.move(x, y);
 	}
 
 	private double distance(LayoutParams b1, LayoutParams b2) {
@@ -317,6 +320,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			c.moveToNext();
 		}
 		c.close();
+		updateConnections();
 	}
 	
 	public boolean hasChildsVisible(BubbleView bv) {
@@ -332,7 +336,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	private void updateConnections() {
-		int[][] connections = new int[list.size()][4];
+		int[][] connections = new int[list.size() * list.size()][4];
 		int i = 0;
 		Iterator<BubbleView> iterator = list.values().iterator();
 		while(iterator.hasNext()) {
@@ -340,21 +344,28 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			for(int id : b1.getLinks()) {
 				BubbleView b2 = list.get(id);
 				if(b2 != null && b1 != null && connections.length > i) {
-					LayoutParams p1 = (LayoutParams) b1.getLayoutParams();
-					LayoutParams p2 = (LayoutParams) b2.getLayoutParams();
-					connections[i][0] = (p1.leftMargin + (p1.width / 2));
-					connections[i][1] = (p1.topMargin + (p1.height / 2));
-					connections[i][2] = (p2.leftMargin + (p2.width / 2));
-					connections[i][3] = (p2.topMargin + (p2.height / 2));
+					int[] b1Position = b1.getViewPosition();
+					int[] b2Position = b2.getViewPosition();
+
+					connections[i][0] = b1Position[0];
+					connections[i][1] = b1Position[1];
+					connections[i][2] = b2Position[0];
+					connections[i][3] = b2Position[1];
 					i++;
 				}
 			}
+		}
+		if(frame != null) {
 			frame.setConnections(connections);
 		}
 	}
 
 	private void onEmptyClick() {
 		((BubbleActivity) getActivity()).onEmptyClick();
+	}
+
+	public void saveBubbles() {
+		cms.saveBubbles(new ArrayList<BubbleView>(list.values()));
 	}
 
 }

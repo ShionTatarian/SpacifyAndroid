@@ -1,10 +1,11 @@
 package fi.android.spacify.service;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.client.methods.HttpGet;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -16,7 +17,6 @@ import fi.android.service.web.WebService;
 import fi.android.service.web.WebServiceException;
 import fi.android.spacify.R;
 import fi.android.spacify.db.BubbleDatabase;
-import fi.android.spacify.model.Bubble;
 import fi.android.spacify.view.BubbleView;
 import fi.spacify.android.util.Events;
 import fi.spacify.android.util.WebPipes;
@@ -40,6 +40,10 @@ public class ContentManagementService extends BaseService {
 
 	private ContentManagementService(Context context) {
 		this.context = context;
+
+		// if(getBubblesWithPriority(0).getCount() == 0) {
+			getBubblesFromAssets();
+		// }
 	}
 
 	/**
@@ -70,7 +74,6 @@ public class ContentManagementService extends BaseService {
 
 	public void fetchBubbles() {
 		HttpGet get = new HttpGet(context.getResources().getString(R.string.url_cms_all_bubbles));
-		
 		WEB.requestJSON(get, bubbleParser, WebPipes.BUBBLE_REQUEST_PIPE);
 	}
 
@@ -79,19 +82,7 @@ public class ContentManagementService extends BaseService {
 		@Override
 		public void successResult(JSONObject json) {
 			Log.v(TAG, "Got bubbles: " + json);
-			
-			List<Bubble> bubbles = new ArrayList<Bubble>();
-			try {
-				JSONArray jArray = json.getJSONArray("add");
-
-				for(int i = 0; i < jArray.length(); i++) {
-					bubbles.add(new Bubble(jArray.getJSONObject(i)));
-				}
-			} catch(JSONException e) {
-				e.printStackTrace();
-			}
-
-			db.storeBubbles(bubbles);
+			db.storeBubbleJson(json);
 			es.dispatchEvent(Events.ALL_BUBBLES_FETCHED.ordinal());
 		}
 
@@ -124,6 +115,10 @@ public class ContentManagementService extends BaseService {
 		return db.getBubblesWithPriority(priority);
 	}
 
+	public Cursor getBubblesInContext(String context) {
+		return db.getBubblesInContext(context);
+	}
+
 	public List<BubbleView> getBubbles(List<Integer> links) {
 		Cursor c = db.getLinkedBubblesCursor(links);
 		List<BubbleView> bubbles = new ArrayList<BubbleView>();
@@ -136,6 +131,36 @@ public class ContentManagementService extends BaseService {
 
 		return bubbles;
 
+	}
+
+	public void saveBubbles(List<BubbleView> values) {
+		db.storeBubbleViews(values);
+	}
+
+	private void getBubblesFromAssets() {
+		try {
+			InputStream is = context.getAssets().open("contextContent");
+			int size = is.available();
+
+			byte[] buffer = new byte[size];
+			is.read(buffer);
+			is.close();
+
+			JSONObject contextContent = new JSONObject(new String(buffer));
+			db.storeBubbleJson(contextContent);
+
+		} catch(IOException e) {
+			Log.e(TAG, "Could not read assets content", e);
+		} catch(JSONException e) {
+			Log.e(TAG, "Could not read assets content", e);
+		}
+	}
+
+	public void saveBubble(BubbleView bv) {
+		List<BubbleView> list = new ArrayList<BubbleView>();
+		list.add(bv);
+
+		db.storeBubbleViews(list);
 	}
 
 }

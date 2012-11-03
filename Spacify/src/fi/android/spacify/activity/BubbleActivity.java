@@ -8,6 +8,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
@@ -21,15 +22,16 @@ import fi.android.spacify.R;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.fragment.BubbleFragment;
 import fi.android.spacify.service.ContentManagementService;
+import fi.android.spacify.view.BubbleView.BubbleContexts;
 
 public class BubbleActivity extends BaseActivity {
 
 	private final ContentManagementService cms = ContentManagementService.getInstance();
 	private final int ANIMATION_DURATION = 300;
-	private View root;
+	private ViewGroup root;
 	private View bg, searchLayout;
 	private EditText searchEdit;
-	private int height, width;
+	public static int height, width;
 	private ImageView seachButton;
 	private BubbleFragment activeBubbleFragment;
 	private ValueAnimator va;
@@ -59,26 +61,32 @@ public class BubbleActivity extends BaseActivity {
 
 		activeBubbleFragment = new BubbleFragment();
 		
-		root = findViewById(R.id.bubble_root);
+		root = (ViewGroup) findViewById(R.id.bubble_root);
 		changeFragment(R.id.bubble_root, activeBubbleFragment);
 		cms.fetchBubbles();
 	}
 
 	public void onMeClick(final View view) {
+		activeBubbleFragment.saveBubbles();
+
 		activeBubbleFragment = new BubbleFragment();
 		activeBubbleFragment.setBubbleCursor(cms.getBubblesWithPriority(2), BubbleActivity.this);
 		animateFragmentChange(view);
 	}
 
-	public void onInfoClick(View view) {
+	public void onPeopleClick(View view) {
+		activeBubbleFragment.saveBubbles();
+
 		activeBubbleFragment = new BubbleFragment();
-		activeBubbleFragment.setBubbleCursor(cms.getBubblesWithPriority(0), this);
+		activeBubbleFragment.setBubbleCursor(cms.getBubblesInContext(BubbleContexts.PEOPLE), this);
 		animateFragmentChange(view);
 	}
 
 	public void onEventsClick(View view) {
+		activeBubbleFragment.saveBubbles();
+
 		activeBubbleFragment = new BubbleFragment();
-		activeBubbleFragment.setBubbleCursor(cms.getBubblesWithPriority(0), this);
+		activeBubbleFragment.setBubbleCursor(cms.getBubblesInContext(BubbleContexts.EVENTS), this);
 		animateFragmentChange(view);
 	}
 
@@ -102,6 +110,7 @@ public class BubbleActivity extends BaseActivity {
 			});
 			root.startAnimation(closeFragmentAnimation);
 		} else {
+			changeFragment(R.id.bubble_root, activeBubbleFragment);
 			openAnimation(v);
 		}
 	}
@@ -117,7 +126,7 @@ public class BubbleActivity extends BaseActivity {
 		scaleAnim.setFillAfter(true);
 		scaleAnim.setInterpolator(new LinearInterpolator());
 		scaleAnim.setDuration(ANIMATION_DURATION);
-
+		
 		closeFragmentAnimation = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF,
 				xPosition, Animation.RELATIVE_TO_SELF, yPosition);
 		closeFragmentAnimation.setFillBefore(true);
@@ -125,13 +134,7 @@ public class BubbleActivity extends BaseActivity {
 		closeFragmentAnimation.setInterpolator(new ReverseInterpolator());
 		closeFragmentAnimation.setDuration(ANIMATION_DURATION);
 
-		root.postDelayed(new Runnable() {
-
-			@Override
-			public void run() {
-				root.startAnimation(scaleAnim);
-			}
-		}, 50);
+		root.startAnimation(scaleAnim);
 	}
 
 	public void onSearchClick(View view) {
