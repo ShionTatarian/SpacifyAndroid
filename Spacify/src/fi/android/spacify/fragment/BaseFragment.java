@@ -1,4 +1,4 @@
-package fi.android.spacify.activity;
+package fi.android.spacify.fragment;
 
 import android.app.Activity;
 import android.os.Handler;

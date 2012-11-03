@@ -1,4 +1,4 @@
-package fi.android.spacify.activity;
+package fi.android.spacify.fragment;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -20,6 +20,7 @@ import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.FrameLayout.LayoutParams;
 import fi.android.spacify.R;
+import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.ConnectionLayout;
@@ -143,15 +144,15 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				if(firstTouched != null) {
 					firstTouched.endZoom();
 					if(event.getPointerCount() == 1) {
+						if(firstTouched.moved <= BubbleView.MOVEMENT_TOUCH_TRESHOLD) {
+							onSingleTouch(bv);
+						}
 						firstTouched = null;
 					}
 				}
 				initialD = -1;
 
 				if(bv != null) {
-					if(bv.moved <= BubbleView.MOVEMENT_TOUCH_TRESHOLD) {
-						onSingleTouch(bv);
-					}
 					bv.onTouchUp();
 				}
 
