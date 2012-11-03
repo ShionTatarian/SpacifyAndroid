@@ -22,7 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import fi.android.service.WorkService;
 import fi.android.spacify.R;
-import fi.android.spacify.activity.BaseFragment;
+import fi.android.spacify.fragment.BaseFragment;
 import fi.android.spacify.gesture.GestureInterface;
 import fi.android.spacify.model.Bubble;
 import fi.android.spacify.service.ContentManagementService;

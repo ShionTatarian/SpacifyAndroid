@@ -15,8 +15,8 @@ import android.view.Gravity;
 import android.widget.FrameLayout.LayoutParams;
 import android.widget.TextView;
 import fi.android.spacify.R;
-import fi.android.spacify.activity.BubbleFragment;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
+import fi.android.spacify.fragment.BubbleFragment;
 
 @SuppressWarnings("javadoc")
 public class BubbleView extends TextView {
@@ -304,6 +304,8 @@ public class BubbleView extends TextView {
 	}
 
 	public void zoom(double d) {
+		moved = MOVEMENT_TOUCH_TRESHOLD * 2;
+
 		LayoutParams params = (LayoutParams) getLayoutParams();
 		params.width = (int) (diameter * d);
 		params.height = (int) (diameter * d);
