@@ -96,6 +96,11 @@ public class BubbleView extends TextView {
 		super(context);
 		super.setLayoutParams(new LayoutParams(100, 100));
 		
+		updateContent(c);
+		init();
+	}
+
+	public void updateContent(Cursor c) {
 		id = c.getInt(c.getColumnIndex(BubbleColumns.ID));
 		title = c.getString(c.getColumnIndex(BubbleColumns.TITLE));
 		setText(title);
@@ -132,7 +137,7 @@ public class BubbleView extends TextView {
 			move(x, y);
 		}
 
-		init();
+		postInvalidate();
 	}
 
 	@Override

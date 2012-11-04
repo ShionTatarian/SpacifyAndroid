@@ -3,7 +3,10 @@ package fi.android.spacify.activity;
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.Context;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -16,21 +19,27 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.ScaleAnimation;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.FilterQueryProvider;
+import android.widget.Gallery;
 import android.widget.ImageView;
 import android.widget.RelativeLayout.LayoutParams;
 import fi.android.spacify.R;
+import fi.android.spacify.adapter.BubbleCursorAdapter;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.fragment.BubbleFragment;
 import fi.android.spacify.service.ContentManagementService;
+import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.BubbleView.BubbleContexts;
+import fi.spacify.android.util.StaticUtils;
 
 public class BubbleActivity extends BaseActivity {
 
 	private final ContentManagementService cms = ContentManagementService.getInstance();
-	private final int ANIMATION_DURATION = 300;
 	private ViewGroup root;
-	private View bg, searchLayout;
+	private View bg, searchLayout, meBubble;
 	private EditText searchEdit;
+	private BubbleCursorAdapter bcAdapter;
+	private Gallery searchGallery;
 	public static int height, width;
 	private ImageView seachButton;
 	private BubbleFragment activeBubbleFragment;
@@ -46,6 +55,34 @@ public class BubbleActivity extends BaseActivity {
 		searchLayout = findViewById(R.id.search_layout);
 		seachButton = (ImageView) findViewById(R.id.search_button);
 		searchEdit = (EditText) findViewById(R.id.search_edit);
+		searchGallery = (Gallery) findViewById(R.id.search_bubble_gallery);
+		bcAdapter = new BubbleCursorAdapter(getApplicationContext(), cms.getBubblesWithPriority(0),
+				false);
+		bcAdapter.setFilterQueryProvider(filterQuery);
+
+		searchGallery.setAdapter(bcAdapter);
+
+		searchEdit.addTextChangedListener(new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void afterTextChanged(Editable s) {
+				bcAdapter.getFilter().filter(s.toString());
+			}
+		});
+		
+		meBubble = findViewById(R.id.button_me);
 
 		DisplayMetrics metrics = new DisplayMetrics();
 		Display display = getWindowManager().getDefaultDisplay();
@@ -66,11 +103,20 @@ public class BubbleActivity extends BaseActivity {
 		cms.fetchBubbles();
 	}
 
+	FilterQueryProvider filterQuery = new FilterQueryProvider() {
+
+		@Override
+		public Cursor runQuery(CharSequence constraint) {
+			return cms.getBubbleSearch(constraint);
+		}
+	};
+
 	public void onMeClick(final View view) {
 		activeBubbleFragment.saveBubbles();
 
 		activeBubbleFragment = new BubbleFragment();
-		activeBubbleFragment.setBubbleCursor(cms.getBubblesWithPriority(2), BubbleActivity.this);
+		activeBubbleFragment.setBubbleCursor(cms.getBubblesInContext(BubbleContexts.ME),
+				BubbleActivity.this);
 		animateFragmentChange(view);
 	}
 
@@ -125,14 +171,14 @@ public class BubbleActivity extends BaseActivity {
 		scaleAnim.setFillBefore(true);
 		scaleAnim.setFillAfter(true);
 		scaleAnim.setInterpolator(new LinearInterpolator());
-		scaleAnim.setDuration(ANIMATION_DURATION);
+		scaleAnim.setDuration(StaticUtils.ANIMATION_DURATION);
 		
 		closeFragmentAnimation = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF,
 				xPosition, Animation.RELATIVE_TO_SELF, yPosition);
 		closeFragmentAnimation.setFillBefore(true);
 		closeFragmentAnimation.setFillAfter(true);
 		closeFragmentAnimation.setInterpolator(new ReverseInterpolator());
-		closeFragmentAnimation.setDuration(ANIMATION_DURATION);
+		closeFragmentAnimation.setDuration(StaticUtils.ANIMATION_DURATION);
 
 		root.startAnimation(scaleAnim);
 	}
@@ -149,14 +195,13 @@ public class BubbleActivity extends BaseActivity {
 
 		va = new ValueAnimator();
 		va.setInterpolator(new AccelerateInterpolator());
-		va.setDuration(ANIMATION_DURATION);
+		va.setDuration(StaticUtils.ANIMATION_DURATION);
 		va.setIntValues(current, target);
 		va.addUpdateListener(new AnimatorUpdateListener() {
 			
 			@Override
 			public void onAnimationUpdate(ValueAnimator animation) {
 				params.rightMargin = (Integer) animation.getAnimatedValue();
-				Log.d("anim", "value: " + params.rightMargin);
 				seachButton.post(new Runnable() {
 
 					@Override
@@ -183,7 +228,7 @@ public class BubbleActivity extends BaseActivity {
 					imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,
 							InputMethodManager.RESULT_UNCHANGED_SHOWN);
 				}
-			}, ANIMATION_DURATION);
+			}, StaticUtils.ANIMATION_DURATION);
 		}
 	}
 
@@ -193,4 +238,52 @@ public class BubbleActivity extends BaseActivity {
 			onSearchClick(null);
 		}
 	}
+
+	public void dropDown(BubbleView bv) {
+		if(BubbleFragment.isHit(bv, meBubble)) {
+			Log.d("DROP DOWN", "Me bubble HIT");
+			bv.setContext(BubbleContexts.ME);
+			animateInAndOut(bv);
+		}
+	}
+
+	private void animateInAndOut(final BubbleView bv) {
+		int meX = (meBubble.getLeft() + (meBubble.getWidth() / 2));
+		int meY = (meBubble.getTop() + (meBubble.getHeight() / 2));
+
+		Animation in = new ScaleAnimation(1, 0, 1, 0, Animation.ABSOLUTE, (meX - bv.x),
+				Animation.ABSOLUTE, (meY - bv.y));
+		in.setInterpolator(new LinearInterpolator());
+		in.setDuration(StaticUtils.ANIMATION_DURATION);
+
+		final Animation out = new ScaleAnimation(1, 0, 1, 0, Animation.ABSOLUTE, (meX - bv.x),
+				Animation.ABSOLUTE, (meY - bv.y));
+		out.setInterpolator(new ReverseInterpolator());
+		out.setDuration(StaticUtils.ANIMATION_DURATION);
+
+		in.setAnimationListener(new AnimationListener() {
+
+			@Override
+			public void onAnimationStart(Animation animation) {
+			}
+
+			@Override
+			public void onAnimationRepeat(Animation animation) {
+			}
+
+			@Override
+			public void onAnimationEnd(Animation animation) {
+				bv.startAnimation(out);
+			}
+		});
+
+		bv.startAnimation(in);
+	}
+
+	@Override
+	protected void onDestroy() {
+		activeBubbleFragment.saveBubbles();
+		super.onDestroy();
+	}
+
 }

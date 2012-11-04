@@ -269,4 +269,14 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		db.endTransaction();
 	}
 
+	public Cursor getBubbleSearch(CharSequence constraint) {
+		SQLiteDatabase db = getReadableDatabase();
+		String sql = "SELECT * FROM " + BUBBLE_TABLE + " WHERE " + 
+		BubbleColumns.TITLE + " LIKE '%"+ constraint + "%' OR " + 
+		BubbleColumns.CONTENTS + " LIKE '%" + constraint+ "%' OR " + 
+		BubbleColumns.CONTEXT + " LIKE '%" + constraint + "%'";
+		Cursor c = db.rawQuery(sql, null);
+		return c;
+	}
+
 }

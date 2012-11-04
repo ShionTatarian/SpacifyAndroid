@@ -36,8 +36,8 @@
 
     <LinearLayout
         android:id="@+id/search_layout"
-        android:layout_width="300dp"
-        android:layout_height="@dimen/search_box_height"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
         android:orientation="vertical" >
@@ -45,13 +45,14 @@
         <EditText
             android:id="@+id/search_edit"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:maxLines="1" />
 
         <Gallery
             android:id="@+id/search_bubble_gallery"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="@dimen/search_bubble_size"
+            android:spacing="@dimen/margin_normal" />
     </LinearLayout>
 
     <Button

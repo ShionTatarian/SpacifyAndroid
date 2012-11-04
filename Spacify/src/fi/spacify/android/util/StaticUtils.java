@@ -9,6 +9,8 @@ public class StaticUtils {
 
 	private static final String TAG = "StaticUtils";
 
+	public static final int ANIMATION_DURATION = 300;
+
 	public static String parseStringJSON(JSONObject json, String key, String defValue) {
 		String value = defValue;
 

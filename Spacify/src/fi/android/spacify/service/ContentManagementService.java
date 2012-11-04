@@ -41,9 +41,9 @@ public class ContentManagementService extends BaseService {
 	private ContentManagementService(Context context) {
 		this.context = context;
 
-		// if(getBubblesWithPriority(0).getCount() == 0) {
+		if(getBubblesWithPriority(0).getCount() == 0) {
 			getBubblesFromAssets();
-		// }
+		}
 	}
 
 	/**
@@ -161,6 +161,10 @@ public class ContentManagementService extends BaseService {
 		list.add(bv);
 
 		db.storeBubbleViews(list);
+	}
+
+	public Cursor getBubbleSearch(CharSequence constraint) {
+		return db.getBubbleSearch(constraint);
 	}
 
 }

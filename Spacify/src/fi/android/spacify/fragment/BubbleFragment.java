@@ -11,6 +11,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -20,28 +21,39 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.ScaleAnimation;
 import android.widget.FrameLayout.LayoutParams;
 import fi.android.spacify.R;
 import fi.android.spacify.activity.BubbleActivity;
+import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.ConnectionLayout;
 import fi.spacify.android.util.Events;
+import fi.spacify.android.util.StaticUtils;
 
 public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	private final String TAG = "BubbleFragment";
+
+	private final int UPDATE_DELAY = 300;
 
 	private final ContentManagementService cms = ContentManagementService.getInstance();
 	private Map<Integer, BubbleView> list = new HashMap<Integer, BubbleView>();
 	private ConnectionLayout frame;
 	private int height, width;
 	private BubbleView singleTouched;
+	private Handler handler;
+	private boolean animationInProgress = false;
 
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
 		updateConnections();
+		handler = new Handler();
 	}
 
 	@Override
@@ -59,8 +71,20 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		updateBubbles();
 		updateConnections();
 
+		handler.postDelayed(updateConnections, UPDATE_DELAY);
+
 		return frame;
 	}
+
+	private Runnable updateConnections = new Runnable() {
+
+		@Override
+		public void run() {
+			updateConnections();
+
+			handler.postDelayed(updateConnections, UPDATE_DELAY);
+		}
+	};
 
 	private void updateBubbles() {
 		Random r = new Random();
@@ -171,6 +195,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 				if(bv != null) {
 					bv.onTouchUp();
+					((BubbleActivity) getActivity()).dropDown(bv);
 				}
 
 				break;
@@ -180,69 +205,140 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	public void onSingleTouch(BubbleView bv) {
-		Log.d(TAG, "onSingleTouch");
-		addSubBubbles(bv);
+		if(!animationInProgress) {
+			addSubBubbles(bv);
+		}
 	}
 
 	private void addSubBubbles(BubbleView bv) {
 		Random r = new Random();
 		if(hasChildsVisible(bv)) {
-			removeBubbles(bv.getLinks());
+			removeBubbles(bv.getLinks(), bv);
 			return;
 		}
 
 		for(final BubbleView nBubble : cms.getBubbles(bv.getLinks())) {
 			if(!list.containsKey(nBubble.getID())) {
 				Log.d(TAG, "New Bubble [" + nBubble.getTitle() + "]");
-				addBubble(nBubble);
+				animateBubbleAdd(nBubble, bv);
 			}
 		}
 		updateConnections();
 	}
 
-	private void removeBubbles(List<Integer> links) {
+	private void removeBubbles(List<Integer> links, BubbleView from) {
 		for(int id : links) {
-			removeBubble(list.get(id));
+			if(from != null) {
+				animateBubbleRemove(list.get(id), from);
+			} else {
+				removeBubble(list.get(id));
+			}
 		}
 	}
 
 	public void removeBubble(BubbleView bubbleView) {
 		if(bubbleView != null) {
 			frame.removeView(bubbleView);
-			BubbleView removed = list.remove(bubbleView.getID());
+			list.remove(bubbleView.getID());
 
-			cms.saveBubble(removed);
+			cms.saveBubble(bubbleView);
 
 			updateConnections();
 		}
 	}
 
-	public void addBubble(BubbleView bv) {
+	private void animateBubbleRemove(final BubbleView bv, BubbleView to) {
+		list.remove(bv.getID());
+		updateConnections();
+		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE,
+				(to.x - bv.x + (bv.diameter / 2)), Animation.ABSOLUTE,
+				(to.y - bv.y + (bv.diameter / 2)));
+		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+		anim.setInterpolator(new ReverseInterpolator());
+
+		anim.setAnimationListener(new AnimationListener() {
+
+			@Override
+			public void onAnimationStart(Animation animation) {
+			}
+
+			@Override
+			public void onAnimationRepeat(Animation animation) {
+			}
+
+			@Override
+			public void onAnimationEnd(Animation animation) {
+				removeBubble(bv);
+				animationInProgress = false;
+			}
+		});
+
+		bv.startAnimation(anim);
+		animationInProgress = true;
+	}
+
+	private void animateBubbleAdd(final BubbleView bv, BubbleView from) {
 		if(!list.containsKey(bv.getID())) {
-			bv.setOnTouchListener(this);
-			list.put(bv.getID(), bv);
 			frame.addView(bv);
-			updateConnections();
+
+			int fromX = (from.x);
+			int fromY = (from.y);
+			int toX = (bv.x);
+			int toY = (bv.y);
+
+			Animation anim = new ScaleAnimation(0, 1, 0, 1, 
+					Animation.ABSOLUTE,	(fromX - toX + (bv.diameter / 2)), 
+					Animation.ABSOLUTE, (fromY - toY + (bv.diameter / 2)));
+			anim.setDuration(StaticUtils.ANIMATION_DURATION);
+			anim.setInterpolator(new LinearInterpolator());
+
+			anim.setAnimationListener(new AnimationListener() {
+
+				@Override
+				public void onAnimationStart(Animation animation) {
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation animation) {
+				}
+
+				@Override
+				public void onAnimationEnd(Animation animation) {
+					list.put(bv.getID(), bv);
+					bv.setOnTouchListener(BubbleFragment.this);
+					updateConnections();
+					animationInProgress = false;
+				}
+			});
+
+			bv.startAnimation(anim);
+			animationInProgress = true;
 		} else {
 			Log.w(TAG, "Could not add bubble [" + bv.getTitle() + "], already in view");
 		}
+	}
 
+	protected void addBubble(BubbleView bv) {
+		frame.addView(bv);
+		bv.setOnTouchListener(BubbleFragment.this);
+		list.put(bv.getID(), bv);
+		updateConnections();
 	}
 
 	private void testHit(final BubbleView bv) {
 		for(BubbleView b : list.values()) {
-			LayoutParams p1 = (LayoutParams) bv.getLayoutParams();
-			LayoutParams p2 = (LayoutParams) b.getLayoutParams();
-			if(isHit(p1, p2) && b.getID() != bv.getID()) {
+			if(isHit(bv, b) && b.getID() != bv.getID()) {
 				autoMove(bv, b);
 			}
 		}
 	}
 
-	private boolean isHit(LayoutParams p1, LayoutParams p2) {
-		double a = ((p1.width + p2.width) / 2);
-		double dx = p1.leftMargin - p2.leftMargin;
-		double dy = p1.topMargin - p2.topMargin;
+	public static boolean isHit(View b1, View b2) {
+		double radius1 = (b1.getWidth() / 2);
+		double radius2 = (b2.getWidth() / 2);
+		double a = (radius1 + radius2);
+		double dx = (b1.getLeft() + radius1) - (b2.getLeft() + radius2);
+		double dy = (b1.getTop() + radius1) - (b2.getTop() + radius2);
 		return a * a > ((dx * dx) + (dy * dy));
 	}
 
