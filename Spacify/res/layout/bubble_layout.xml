@@ -25,6 +25,28 @@
         android:paddingTop="50dp"
         android:text="ME" />
 
+    <Button
+        android:id="@+id/button_events"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:background="@drawable/greenball"
+        android:onClick="onEventsClick"
+        android:padding="20dp"
+        android:text="EVENTS" />
+
+    <Button
+        android:id="@+id/button_people"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/greenball"
+        android:onClick="onPeopleClick"
+        android:padding="20dp"
+        android:text="People" />
+
     <ImageView
         android:id="@+id/search_button"
         android:layout_width="@dimen/search_button_width"
@@ -54,27 +76,5 @@
             android:layout_height="@dimen/search_bubble_size"
             android:spacing="@dimen/margin_normal" />
     </LinearLayout>
-
-    <Button
-        android:id="@+id/button_events"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:background="@drawable/greenball"
-        android:onClick="onEventsClick"
-        android:padding="20dp"
-        android:text="EVENTS" />
-
-    <Button
-        android:id="@+id/button_people"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:background="@drawable/greenball"
-        android:onClick="onPeopleClick"
-        android:padding="20dp"
-        android:text="People" />
 
 </RelativeLayout>

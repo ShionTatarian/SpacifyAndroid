@@ -10,18 +10,14 @@ import org.json.JSONException;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.graphics.Color;
 import android.util.Log;
-import android.view.Gravity;
-import android.widget.FrameLayout.LayoutParams;
-import android.widget.TextView;
 import fi.android.spacify.R;
 import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
 import fi.android.spacify.fragment.BubbleFragment;
 
 @SuppressWarnings("javadoc")
-public class BubbleView extends TextView {
+public class BubbleView extends BaseBubbleView {
 
 	private final String TAG = "Bubble";
 
@@ -79,9 +75,6 @@ public class BubbleView extends TextView {
 
 	private void init() {
 		setBackgroundResource(R.drawable.lightblueball);
-		setTextColor(Color.WHITE);
-		setGravity(Gravity.CENTER);
-		setPadding(PADDING, PADDING, PADDING, PADDING);
 		zoom(1);
 	}
 
@@ -313,7 +306,7 @@ public class BubbleView extends TextView {
 		params.topMargin = this.y;
 		setLayoutParams(params);
 
-		double m = BubbleFragment.distance(x, y, startX, startY);
+		double m = BubbleFragment.distance(this.x, this.y, startX, startY);
 		if(m >= moved) {
 			moved = m;
 		}
@@ -344,6 +337,7 @@ public class BubbleView extends TextView {
 		offsetY = 0;
 		movement = BubbleMovement.INERT;
 		endZoom();
+
 	}
 
 	public void endZoom() {

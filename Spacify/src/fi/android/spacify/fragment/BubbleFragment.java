@@ -206,11 +206,12 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	public void onSingleTouch(BubbleView bv) {
 		if(!animationInProgress) {
-			addSubBubbles(bv);
+			onBubbleViewClick(bv);
+			checkChildCount();
 		}
 	}
 
-	private void addSubBubbles(BubbleView bv) {
+	private void onBubbleViewClick(BubbleView bv) {
 		Random r = new Random();
 		if(hasChildsVisible(bv)) {
 			removeBubbles(bv.getLinks(), bv);
@@ -270,6 +271,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			public void onAnimationEnd(Animation animation) {
 				removeBubble(bv);
 				animationInProgress = false;
+				checkChildCount();
 			}
 		});
 
@@ -308,6 +310,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 					bv.setOnTouchListener(BubbleFragment.this);
 					updateConnections();
 					animationInProgress = false;
+					checkChildCount();
 				}
 			});
 
@@ -323,6 +326,21 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		bv.setOnTouchListener(BubbleFragment.this);
 		list.put(bv.getID(), bv);
 		updateConnections();
+
+		checkChildCount();
+	}
+
+	private void checkChildCount() {
+		for(BubbleView bv : list.values()) {
+			int count = 0;
+			List<Integer> links = bv.getLinks();
+			for(int id : links) {
+				if(list.containsKey(id)) {
+					count += 1;
+				}
+			}
+			bv.setLinkCount((links.size() - count));
+		}
 	}
 
 	private void testHit(final BubbleView bv) {
@@ -416,6 +434,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			c.moveToNext();
 		}
 		c.close();
+		checkChildCount();
 		updateConnections();
 	}
 	

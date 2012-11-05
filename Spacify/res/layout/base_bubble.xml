@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/base_bubble_link_count"
+        android:layout_width="@dimen/text_huge"
+        android:layout_height="@dimen/text_huge"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:background="@drawable/greenball"
+        android:gravity="center"
+        android:textColor="@android:color/white"
+        android:textSize="@dimen/text_medium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/base_bubble_bubble"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:padding="@dimen/margin_half"
+        android:textColor="@android:color/white" />
+
+</RelativeLayout>
