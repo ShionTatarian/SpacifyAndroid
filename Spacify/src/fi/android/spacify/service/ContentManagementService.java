@@ -41,9 +41,9 @@ public class ContentManagementService extends BaseService {
 	private ContentManagementService(Context context) {
 		this.context = context;
 
-		if(getBubblesWithPriority(0).getCount() == 0) {
+		// if(getBubblesWithPriority(0).getCount() == 0) {
 			getBubblesFromAssets();
-		}
+		// }
 	}
 
 	/**

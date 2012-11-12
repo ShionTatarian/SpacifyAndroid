@@ -13,6 +13,7 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.app.FragmentTransaction;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -30,6 +31,7 @@ import fi.android.spacify.R;
 import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.service.ContentManagementService;
+import fi.android.spacify.view.BaseBubbleView;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.ConnectionLayout;
 import fi.spacify.android.util.Events;
@@ -49,17 +51,35 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	private Handler handler;
 	private boolean animationInProgress = false;
 
+	private View popup;
+	private BubbleControlFragment controls;
+	private Animation closePopupAnimation;
+	private BubbleView openPopupView;
+
+	private BubbleActivity parentActivity;
+	
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
 		updateConnections();
 		handler = new Handler();
+		parentActivity = (BubbleActivity) activity;
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		frame = (ConnectionLayout) inflater.inflate(R.layout.bubble_frame, container, false);
 		frame.setOnTouchListener(this);
+
+		popup = frame.findViewById(R.id.bubble_popup);
+		popup.setVisibility(View.GONE);
+		if(controls == null) {
+			controls = new BubbleControlFragment();
+			controls.setBubbleFrame(this);
+			FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+			ft.replace(R.id.bubble_popup, controls);
+			ft.commit();
+		}
 
 		DisplayMetrics metrics = new DisplayMetrics();
 		Display display = getActivity().getWindowManager().getDefaultDisplay();
@@ -135,10 +155,11 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				firstTouched = bv;
 			}
 		}
+		
+		if(closePopupAnimation != null && bv == null) {
+			closePopup();
+		}
 
-		LayoutParams params = ((LayoutParams) v.getLayoutParams());
-		float dx = 0;
-		float dy = 0;
 		int action = (event.getAction() & MotionEvent.ACTION_MASK);
 
 		switch (action) {
@@ -146,10 +167,10 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			case MotionEvent.ACTION_POINTER_DOWN:
 				if(bv != null) {
 					bv.onTouchDown();
-					dx = params.leftMargin - x + (params.width / 2);
-					dy = params.topMargin - y + (params.height / 2);
-					bv.offsetX = (int) dx;
-					bv.offsetY = (int) dy;
+					int dx = (int) (v.getLeft() - x + (v.getWidth() / 2));
+					int dy = (int) (v.getTop() - y + (v.getHeight() / 2));
+					bv.offsetX = dx;
+					bv.offsetY = dy;
 
 					if(bv.getID() != firstTouched.getID()) {
 						firstTouched = null;
@@ -163,6 +184,15 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				if(bv != null) {
 					bv.move((int) x, (int) y);
 					testHit(bv);
+
+					if(openPopupView == bv) {
+						LayoutParams params = (LayoutParams) popup.getLayoutParams();
+						params.leftMargin = bv.getLeft() + (bv.getWidth() / 2) - (popup.getWidth() /2);
+						params.topMargin = bv.getTop() + (bv.getHeight() / 2)- (popup.getHeight() /2);
+						popup.setLayoutParams(params);
+					}
+
+					parentActivity.onDrag(bv);
 				}
 
 				if(firstTouched != null && event.getPointerCount() == 2) {
@@ -176,6 +206,16 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 						initialD = d;
 					} else {
 						firstTouched.zoom(d / initialD);
+						if(closePopupAnimation != null && openPopupView == bv) {
+							int size = (bv.getWidth() * 2);
+							controls.setSize(size);
+							final LayoutParams params = (LayoutParams) popup.getLayoutParams();
+							params.width = size;
+							params.height = size;
+							params.leftMargin = bv.getLeft() + (bv.getWidth() / 2) - (popup.getWidth() /2);
+							params.topMargin = bv.getTop() + (bv.getHeight() / 2)- (popup.getHeight() /2);
+							popup.setLayoutParams(params);
+						}
 					}
 				}
 
@@ -185,7 +225,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				if(firstTouched != null) {
 					firstTouched.endZoom();
 					if(event.getPointerCount() == 1) {
-						if(firstTouched.moved <= BubbleView.MOVEMENT_TOUCH_TRESHOLD) {
+						if(firstTouched.moved <= BaseBubbleView.MOVEMENT_TOUCH_TRESHOLD) {
 							onSingleTouch(bv);
 						}
 						firstTouched = null;
@@ -195,7 +235,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 				if(bv != null) {
 					bv.onTouchUp();
-					((BubbleActivity) getActivity()).dropDown(bv);
+					((BubbleActivity) getActivity()).onDrop(bv);
 				}
 
 				break;
@@ -205,26 +245,98 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	public void onSingleTouch(BubbleView bv) {
-		if(!animationInProgress) {
-			onBubbleViewClick(bv);
-			checkChildCount();
+		if(true) {
+			openControlPopup(bv);
+			return;
 		}
 	}
 
-	private void onBubbleViewClick(BubbleView bv) {
-		Random r = new Random();
-		if(hasChildsVisible(bv)) {
-			removeBubbles(bv.getLinks(), bv);
+	public void closePopup() {
+		if(closePopupAnimation != null) {
+			popup.setVisibility(View.GONE);
+			popup.startAnimation(closePopupAnimation);
+			closePopupAnimation = null;
+			openPopupView = null;
+		}
+	}
+
+	private void openControlPopup(final BubbleView bv) {
+		if(openPopupView == bv && closePopupAnimation != null) {
+			closePopup();
 			return;
 		}
+		popup.setVisibility(View.VISIBLE);
+		controls.openMenu(bv);
+		popup.bringToFront();
+		bv.bringToFront();
+		int size = (bv.getWidth() * 2);
+		controls.setSize(size);
+		final LayoutParams params = (LayoutParams) popup.getLayoutParams();
+		params.width = size;
+		params.height = size;
+		params.leftMargin = (bv.getLeft() + (bv.getWidth() / 2) - (size / 2));
+		params.topMargin = (bv.getTop() + (bv.getHeight() / 2) - (size / 2));
+		popup.setLayoutParams(params);
+		final Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE, (bv.x
+				- params.leftMargin + (bv.getWidth() / 2)), Animation.ABSOLUTE, (bv.y
+				- params.topMargin + (bv.getWidth() / 2)));
+		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+		anim.setInterpolator(new LinearInterpolator());
+		
+		if(closePopupAnimation != null) {
+			popup.setVisibility(View.GONE);
+			closePopupAnimation.setAnimationListener(new AnimationListener() {
 
-		for(final BubbleView nBubble : cms.getBubbles(bv.getLinks())) {
-			if(!list.containsKey(nBubble.getID())) {
-				Log.d(TAG, "New Bubble [" + nBubble.getTitle() + "]");
-				animateBubbleAdd(nBubble, bv);
-			}
+				@Override
+				public void onAnimationStart(Animation animation) {
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation animation) {
+				}
+
+				@Override
+				public void onAnimationEnd(Animation animation) {
+					popup.setLayoutParams(params);
+					openPopupView = bv;
+					popup.setVisibility(View.VISIBLE);
+					popup.startAnimation(anim);
+				}
+			});
+			popup.startAnimation(closePopupAnimation);
+			closePopupAnimation = null;
+			openPopupView = null;
+		} else {
+
+			openPopupView = bv;
+			popup.startAnimation(anim);
 		}
-		updateConnections();
+
+		closePopupAnimation = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE, (bv.x
+				- params.leftMargin + (bv.getWidth() / 2)), Animation.ABSOLUTE, (bv.y
+				- params.topMargin + (bv.getWidth() / 2)));
+		closePopupAnimation.setDuration(StaticUtils.ANIMATION_DURATION);
+		closePopupAnimation.setInterpolator(new ReverseInterpolator());
+	}
+
+	public void onBubbleViewClick(BubbleView bv) {
+		if(!animationInProgress) {
+			Random r = new Random();
+			if(hasChildsVisible(bv)) {
+				removeBubbles(bv.getLinks(), bv);
+				checkChildCount();
+				return;
+			}
+
+			for(final BubbleView nBubble : cms.getBubbles(bv.getLinks())) {
+				if(!list.containsKey(nBubble.getID())) {
+					Log.d(TAG, "New Bubble [" + nBubble.getTitle() + "]");
+					animateBubbleAdd(nBubble, bv);
+				}
+			}
+			updateConnections();
+			checkChildCount();
+		}
 	}
 
 	private void removeBubbles(List<Integer> links, BubbleView from) {
@@ -252,8 +364,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		list.remove(bv.getID());
 		updateConnections();
 		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE,
-				(to.x - bv.x + (bv.diameter / 2)), Animation.ABSOLUTE,
-				(to.y - bv.y + (bv.diameter / 2)));
+				(to.x - bv.x + (to.getRadius())), Animation.ABSOLUTE,
+				(to.y - bv.y + (to.getRadius())));
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
 		anim.setInterpolator(new ReverseInterpolator());
 
@@ -283,14 +395,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		if(!list.containsKey(bv.getID())) {
 			frame.addView(bv);
 
-			int fromX = (from.x);
-			int fromY = (from.y);
-			int toX = (bv.x);
-			int toY = (bv.y);
-
-			Animation anim = new ScaleAnimation(0, 1, 0, 1, 
-					Animation.ABSOLUTE,	(fromX - toX + (bv.diameter / 2)), 
-					Animation.ABSOLUTE, (fromY - toY + (bv.diameter / 2)));
+			Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE,
+					(from.x - bv.x + (from.getRadius())), Animation.ABSOLUTE,
+					(from.y - bv.y + (from.getRadius())));
 			anim.setDuration(StaticUtils.ANIMATION_DURATION);
 			anim.setInterpolator(new LinearInterpolator());
 
@@ -413,10 +520,6 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		}
 
 		pushed.move(x, y);
-	}
-
-	private double distance(LayoutParams b1, LayoutParams b2) {
-		return distance(b1.leftMargin, b1.topMargin, b2.leftMargin, b2.topMargin);
 	}
 
 	public static double distance(float x, float y, float bx, float by) {

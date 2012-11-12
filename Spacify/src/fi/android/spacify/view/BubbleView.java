@@ -11,18 +11,12 @@ import org.json.JSONException;
 import android.content.Context;
 import android.database.Cursor;
 import android.util.Log;
-import fi.android.spacify.R;
-import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
-import fi.android.spacify.fragment.BubbleFragment;
 
 @SuppressWarnings("javadoc")
 public class BubbleView extends BaseBubbleView {
 
 	private final String TAG = "Bubble";
-
-	public static final double ANIMATION_TIME = 500d;
-	public static final int MOVEMENT_TOUCH_TRESHOLD = 10;
 
 	public static class BubbleJSON {
 		public static final String debugID = "debugId";
@@ -55,16 +49,8 @@ public class BubbleView extends BaseBubbleView {
 		public static final int AUTOMATIC = 2;
 	}
 
-	private final int PADDING = 15;
-
-	public static final double SPEED = 0.3, SIZE_FACTOR = 10;
-
-	public int movement = BubbleMovement.INERT;
-	public float diameter = 100;
 	public boolean linkStatusChanged = false;
 	public boolean lockedToPlase = false;
-
-	public int x, y;
 
 	private int priority, id;
 	private String debugID = "", type = "", style = "", title = "", contents = "", titleImageUrl = "",
@@ -74,7 +60,6 @@ public class BubbleView extends BaseBubbleView {
 	private Set<String> contexts = new HashSet<String>();
 
 	private void init() {
-		setBackgroundResource(R.drawable.lightblueball);
 		zoom(1);
 	}
 
@@ -128,6 +113,7 @@ public class BubbleView extends BaseBubbleView {
 
 		if(x != -1 && y != -1) {
 			move(x, y);
+			moved = 0;
 		}
 
 		postInvalidate();
@@ -276,75 +262,6 @@ public class BubbleView extends BaseBubbleView {
 		this.longitude = longitude;
 	}
 
-	public int offsetX = 0;
-	public int offsetY = 0;
-
-	public void setTouchOffset(int tX, int tY) {
-		int[] pos = getViewPosition();
-		offsetX = pos[0] - tX;
-		offsetY = pos[1] - tY;
-	}
-
-	public void move(int x, int y) {
-		this.y = y;
-		LayoutParams params = (LayoutParams) getLayoutParams();
-		int radius = params.width / 2;
-		if(x - radius < 0) {
-			x = radius;
-		} else if(x + radius > BubbleActivity.width) {
-			x = BubbleActivity.width - radius;
-		}
-		if(y - radius < 0) {
-			y = radius;
-		} else if(y + radius > BubbleActivity.height) {
-			y = BubbleActivity.height - radius;
-		}
-		
-		this.x = (x + offsetX - radius);
-		this.y = (y + offsetY - radius);
-		params.leftMargin = this.x;
-		params.topMargin = this.y;
-		setLayoutParams(params);
-
-		double m = BubbleFragment.distance(this.x, this.y, startX, startY);
-		if(m >= moved) {
-			moved = m;
-		}
-	}
-
-	public void zoom(double d) {
-		moved = MOVEMENT_TOUCH_TRESHOLD * 2;
-
-		LayoutParams params = (LayoutParams) getLayoutParams();
-		params.width = (int) (diameter * d);
-		params.height = (int) (diameter * d);
-		setLayoutParams(params);
-	}
-
-	private int startX, startY;
-	public double moved = 0;
-
-	public void onTouchDown() {
-		moved = 0;
-		movement = BubbleMovement.MOVING;
-		LayoutParams params = (LayoutParams) getLayoutParams();
-		startX = params.leftMargin;
-		startY = params.topMargin;
-	}
-
-	public void onTouchUp() {
-		offsetX = 0;
-		offsetY = 0;
-		movement = BubbleMovement.INERT;
-		endZoom();
-
-	}
-
-	public void endZoom() {
-		LayoutParams params = (LayoutParams) getLayoutParams();
-		diameter = params.width;
-	}
-
 	public void setContext(String context) {
 		contexts.add(context);
 	}
@@ -372,21 +289,6 @@ public class BubbleView extends BaseBubbleView {
 		} catch(JSONException e) {
 			Log.w(TAG, "Could not translate Context information from: " + contextJson, e);
 		}
-	}
-
-	public int[] getViewPosition() {
-		int[] position = new int[2];
-		LayoutParams params = (LayoutParams) getLayoutParams();
-
-		position[0] = (getLeft() + (params.width / 2));
-		position[1] = (getTop() + (params.height / 2));
-
-		return position;
-	}
-
-	public int getRadius() {
-		LayoutParams params = (LayoutParams) getLayoutParams();
-		return(params.width / 2);
 	}
 
 	public void setContexts(JSONArray array) {

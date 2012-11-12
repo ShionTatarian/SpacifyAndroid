@@ -18,8 +18,10 @@ import android.view.animation.Animation.AnimationListener;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.ScaleAnimation;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FilterQueryProvider;
+import android.widget.FrameLayout;
 import android.widget.Gallery;
 import android.widget.ImageView;
 import android.widget.RelativeLayout.LayoutParams;
@@ -27,16 +29,20 @@ import fi.android.spacify.R;
 import fi.android.spacify.adapter.BubbleCursorAdapter;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.fragment.BubbleFragment;
+import fi.android.spacify.fragment.RoundListFragment;
 import fi.android.spacify.service.ContentManagementService;
+import fi.android.spacify.view.BaseBubbleView;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.BubbleView.BubbleContexts;
 import fi.spacify.android.util.StaticUtils;
 
 public class BubbleActivity extends BaseActivity {
 
+	private final String TAG = "BubbleActivity";
+
 	private final ContentManagementService cms = ContentManagementService.getInstance();
 	private ViewGroup root;
-	private View bg, searchLayout, meBubble;
+	private View bg, searchLayout;
 	private EditText searchEdit;
 	private BubbleCursorAdapter bcAdapter;
 	private Gallery searchGallery;
@@ -45,12 +51,29 @@ public class BubbleActivity extends BaseActivity {
 	private BubbleFragment activeBubbleFragment;
 	private ValueAnimator va;
 	private Animation closeFragmentAnimation;
+	private FrameLayout contextLayout;
+	private Button meBubble;
+	private FrameLayout.LayoutParams meParams;
+	private View roundList;
+	private RoundListFragment roundListFragment;
+
+	private View viewInMainContext;
+
+	private int contextLarge, contextSmall;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.bubble_layout);
 		
+		roundListFragment = new RoundListFragment();
+		roundList = findViewById(R.id.context_round_list);
+		roundList.setOnTouchListener(roundListFragment);
+		changeFragment(R.id.context_round_list, roundListFragment);
+
+		contextLarge = (int) getResources().getDimension(R.dimen.context_me);
+		contextSmall = (int) getResources().getDimension(R.dimen.context_me_side);
+		contextLayout = (FrameLayout) findViewById(R.id.context_layout);
 		bg = findViewById(R.id.bubble_background);
 		searchLayout = findViewById(R.id.search_layout);
 		seachButton = (ImageView) findViewById(R.id.search_button);
@@ -82,8 +105,6 @@ public class BubbleActivity extends BaseActivity {
 			}
 		});
 		
-		meBubble = findViewById(R.id.button_me);
-
 		DisplayMetrics metrics = new DisplayMetrics();
 		Display display = getWindowManager().getDefaultDisplay();
 		display.getMetrics(metrics);
@@ -101,9 +122,25 @@ public class BubbleActivity extends BaseActivity {
 		root = (ViewGroup) findViewById(R.id.bubble_root);
 		changeFragment(R.id.bubble_root, activeBubbleFragment);
 		cms.fetchBubbles();
+
+		meBubble = (Button) findViewById(R.id.button_me);
+		meParams = (FrameLayout.LayoutParams) meBubble
+				.getLayoutParams();
+		meParams.width = contextLarge;
+		meParams.height = contextLarge;
+		meParams.leftMargin = ((width / 2) - (contextLarge / 2));
+		meParams.topMargin = ((height) - (contextLarge * 2 / 3));
+		meBubble.setLayoutParams(meParams);
+
+		viewInMainContext = meBubble;
 	}
 
-	FilterQueryProvider filterQuery = new FilterQueryProvider() {
+	@Override
+	protected void onResume() {
+		super.onResume();
+	}
+
+	private FilterQueryProvider filterQuery = new FilterQueryProvider() {
 
 		@Override
 		public Cursor runQuery(CharSequence constraint) {
@@ -115,7 +152,7 @@ public class BubbleActivity extends BaseActivity {
 		activeBubbleFragment.saveBubbles();
 
 		activeBubbleFragment = new BubbleFragment();
-		activeBubbleFragment.setBubbleCursor(cms.getBubblesInContext(BubbleContexts.ME),
+		activeBubbleFragment.setBubbleCursor(cms.getBubblesInContext(BubbleContexts.PEOPLE),
 				BubbleActivity.this);
 		animateFragmentChange(view);
 	}
@@ -162,9 +199,12 @@ public class BubbleActivity extends BaseActivity {
 	}
 
 	private void openAnimation(View v) {
-		LayoutParams params = (LayoutParams) v.getLayoutParams();
-		float xPosition = (((float) v.getLeft() + (float) (params.width / 2)) / width);
-		float yPosition = (((float) v.getTop() + (float) (params.height / 2)) / height);
+		FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) v.getLayoutParams();
+//		float xPosition = (((float) v.getLeft() + (float) (params.width / 2)) / width);
+//		float yPosition = (((float) v.getTop() + (float) (params.height / 2)) / height);
+		
+		float xPosition = 0.5f;
+		float yPosition = 1f;
 
 		final Animation scaleAnim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF,
 				xPosition, Animation.RELATIVE_TO_SELF, yPosition);
@@ -284,6 +324,49 @@ public class BubbleActivity extends BaseActivity {
 	protected void onDestroy() {
 		activeBubbleFragment.saveBubbles();
 		super.onDestroy();
+	}
+
+	private boolean meHalfWay = false;
+	private boolean meOnSide = false;
+
+	public void onDrag(BaseBubbleView bv) {
+		if(!meOnSide && !meHalfWay && BubbleFragment.isHit(bv, meBubble)) {
+
+		}
+	}
+
+	public boolean onDrop(BubbleView bv) {
+		boolean value = false;
+		if(BubbleFragment.isHit(bv, meBubble)) {
+
+		}
+		return value;
+	}
+
+	public void moveViewInContext() {
+		
+	}
+
+	public void onSideContextClick(View view) {
+
+	}
+
+	public void onMainContextClick(View view) {
+		onMeClick(view);
+	}
+
+	private void animateMeButtonHalfWay() {
+		float pivotX = 0;
+		float pivotY = 0;
+
+		Animation anim = new ScaleAnimation(1, 0.5f, 1, 0.5f, Animation.ABSOLUTE, pivotX,
+				Animation.ABSOLUTE, pivotY);
+		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+		anim.setInterpolator(new LinearInterpolator());
+		anim.setFillAfter(true);
+		anim.setFillBefore(true);
+
+		meBubble.startAnimation(anim);
 	}
 
 }
