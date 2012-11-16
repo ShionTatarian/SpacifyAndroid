@@ -19,6 +19,14 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true" >
 
+        <View
+            android:id="@+id/context_placeholder"
+            android:layout_width="@dimen/context_placeholder"
+            android:layout_height="@dimen/context_placeholder"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="-90dp"
+            android:background="@drawable/transparentball" />
+
         <FrameLayout
             android:id="@+id/context_round_list"
             android:layout_width="@dimen/context_round_list"

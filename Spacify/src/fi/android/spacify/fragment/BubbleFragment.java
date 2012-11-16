@@ -235,7 +235,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 				if(bv != null) {
 					bv.onTouchUp();
-					((BubbleActivity) getActivity()).onDrop(bv);
+					if(parentActivity.onDrop(bv)) {
+						// list.remove(bv.getID());
+					}
 				}
 
 				break;
@@ -245,7 +247,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	public void onSingleTouch(BubbleView bv) {
-		if(true) {
+		if(bv != null && list.containsKey(bv.getID()) && !bv.asMainContext) {
 			openControlPopup(bv);
 			return;
 		}
@@ -428,7 +430,12 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		}
 	}
 
-	protected void addBubble(BubbleView bv) {
+	public void addBubble(BubbleView bv) {
+		ViewGroup parent = (ViewGroup) bv.getParent();
+		if(parent != null) {
+			parent.removeView(bv);
+		}
+
 		frame.addView(bv);
 		bv.setOnTouchListener(BubbleFragment.this);
 		list.put(bv.getID(), bv);
@@ -451,8 +458,11 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	private void testHit(final BubbleView bv) {
+		if(bv.asMainContext) {
+			return;
+		}
 		for(BubbleView b : list.values()) {
-			if(isHit(bv, b) && b.getID() != bv.getID()) {
+			if(!b.asMainContext && isHit(bv, b) && b.getID() != bv.getID()) {
 				autoMove(bv, b);
 			}
 		}
@@ -561,7 +571,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			BubbleView b1 = iterator.next();
 			for(int id : b1.getLinks()) {
 				BubbleView b2 = list.get(id);
-				if(b2 != null && b1 != null && connections.length > i) {
+				if(b2 != null && b1 != null && connections.length > i && b1.asMainContext
+						&& b2.asMainContext) {
 					int[] b1Position = b1.getViewPosition();
 					int[] b2Position = b2.getViewPosition();
 
@@ -584,6 +595,10 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	public void saveBubbles() {
 		cms.saveBubbles(new ArrayList<BubbleView>(list.values()));
+	}
+
+	public boolean hasView(BubbleView bv) {
+		return list.containsKey(bv.getID());
 	}
 
 }

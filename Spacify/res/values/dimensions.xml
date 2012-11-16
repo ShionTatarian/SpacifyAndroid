@@ -24,6 +24,7 @@
     <!-- Context sizes -->
     <dimen name="context_round_list">250dp</dimen>
     <dimen name="context_me">150dp</dimen>
+    <dimen name="context_placeholder">140dp</dimen>
     <dimen name="context_me_side">75dp</dimen>
 
 </resources>

@@ -130,7 +130,10 @@ public class ContentManagementService extends BaseService {
 		c.close();
 
 		return bubbles;
+	}
 
+	public Cursor getBubblesCursor(List<Integer> links) {
+		return db.getLinkedBubblesCursor(links);
 	}
 
 	public void saveBubbles(List<BubbleView> values) {

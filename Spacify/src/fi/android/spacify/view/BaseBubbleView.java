@@ -22,6 +22,7 @@ public class BaseBubbleView extends FrameLayout {
 	public int x, y;
 	private int startX, startY;
 	public double moved = 0;
+	public boolean asMainContext = false;
 
 	public BaseBubbleView(Context context) {
 		super(context);
@@ -67,7 +68,7 @@ public class BaseBubbleView extends FrameLayout {
 	}
 
 	public void setLinkCount(int count) {
-		if(count == 0) {
+		if(count == 0 || asMainContext) {
 			links.setVisibility(View.GONE);
 		} else {
 			links.setVisibility(View.VISIBLE);

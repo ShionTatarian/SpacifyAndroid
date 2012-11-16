@@ -10,6 +10,7 @@ import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateInterpolator;
@@ -53,6 +54,7 @@ public class BubbleActivity extends BaseActivity {
 	private Animation closeFragmentAnimation;
 	private FrameLayout contextLayout;
 	private Button meBubble;
+	private View contextPlaceholder;
 	private FrameLayout.LayoutParams meParams;
 	private View roundList;
 	private RoundListFragment roundListFragment;
@@ -74,6 +76,7 @@ public class BubbleActivity extends BaseActivity {
 		contextLarge = (int) getResources().getDimension(R.dimen.context_me);
 		contextSmall = (int) getResources().getDimension(R.dimen.context_me_side);
 		contextLayout = (FrameLayout) findViewById(R.id.context_layout);
+		contextPlaceholder = findViewById(R.id.context_placeholder);
 		bg = findViewById(R.id.bubble_background);
 		searchLayout = findViewById(R.id.search_layout);
 		seachButton = (ImageView) findViewById(R.id.search_button);
@@ -155,6 +158,13 @@ public class BubbleActivity extends BaseActivity {
 		activeBubbleFragment.setBubbleCursor(cms.getBubblesInContext(BubbleContexts.PEOPLE),
 				BubbleActivity.this);
 		animateFragmentChange(view);
+
+		if(meOnSide) {
+			if(viewInMainContext != null) {
+				contextLayout.removeView(viewInMainContext);
+			}
+			finishToMainContext(meBubble);
+		}
 	}
 
 	public void onPeopleClick(View view) {
@@ -280,7 +290,7 @@ public class BubbleActivity extends BaseActivity {
 	}
 
 	public void dropDown(BubbleView bv) {
-		if(BubbleFragment.isHit(bv, meBubble)) {
+		if(BubbleFragment.isHit(bv, contextPlaceholder)) {
 			Log.d("DROP DOWN", "Me bubble HIT");
 			bv.setContext(BubbleContexts.ME);
 			animateInAndOut(bv);
@@ -326,47 +336,142 @@ public class BubbleActivity extends BaseActivity {
 		super.onDestroy();
 	}
 
-	private boolean meHalfWay = false;
 	private boolean meOnSide = false;
 
-	public void onDrag(BaseBubbleView bv) {
-		if(!meOnSide && !meHalfWay && BubbleFragment.isHit(bv, meBubble)) {
-
+	public void onDrag(BubbleView bv) {
+		if(!activeBubbleFragment.hasView(bv)) {
+			meOnSide = false;
 		}
+		if(!meOnSide && BubbleFragment.isHit(bv, contextPlaceholder)) {
+			double d = distanceFromCenter(bv, contextPlaceholder);
+			if(d != 0) {
+				animateToTheSide((d / contextPlaceholder.getWidth()));
+			}
+		} else if(meOnSide && BubbleFragment.isHit(bv, contextPlaceholder)) {
+			double d = distanceFromCenter(bv, contextPlaceholder);
+			if(d != 0) {
+				if(viewInMainContext != null && viewInMainContext instanceof BubbleView
+						&& ((BubbleView) viewInMainContext).getID() == bv.getID()) {
+					animateToTheSide((d / contextPlaceholder.getWidth()));
+					viewInMainContext = null;
+					return;
+				}
+				if(viewInMainContext != null) {
+					offMainContext((d / contextPlaceholder.getWidth()));
+				} else {
+					animateToTheSide((d / contextPlaceholder.getWidth()));
+				}
+			}
+		} else if(!meOnSide) {
+			// snap last large context back if not dropped down inside
+			// contextPlaceholder
+			finishToMainContext(meBubble);
+		} else if(meOnSide && viewInMainContext == bv) {
+			finishToMainContext(meBubble);
+			meOnSide = false;
+		}
+	}
+
+	private void offMainContext(double p) {
+		FrameLayout.LayoutParams params = (android.widget.FrameLayout.LayoutParams) viewInMainContext
+				.getLayoutParams();
+
+		params.width = (int) ((contextLarge * p) + (contextSmall * (1 - p)));
+		params.height = (int) ((contextLarge * p) + (contextSmall * (1 - p)));
+		params.leftMargin = (int) (((width / 2) - (contextLarge / 2)) * p);
+		params.topMargin = (int) (((height) - (contextLarge * 2 / 3)) * p);
+		params.topMargin = (int) (params.topMargin * p);
+		params.leftMargin = (int) (params.leftMargin * p);
+		viewInMainContext.setLayoutParams(params);
+	}
+
+	private void finishToMainContext(View v) {
+		ViewGroup parent = ((ViewGroup) v.getParent());
+		if(parent != null) {
+			parent.removeView(v);
+		}
+		contextLayout.addView(v);
+		FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) v.getLayoutParams();
+		if(v instanceof BaseBubbleView) {
+			((BaseBubbleView) v).setSize(contextLarge);
+			((BaseBubbleView) v).bubble.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+			((BaseBubbleView) v).setLinkCount(0);
+		} else {
+			params.width = contextLarge;
+			params.height = contextLarge;
+		}
+		params.leftMargin = ((width / 2) - (contextLarge / 2));
+		params.topMargin = ((height) - (contextLarge * 2 / 3));
+		v.bringToFront();
+		v.setLayoutParams(params);
+		v.postInvalidate();
+		if(v instanceof BubbleView) {
+			viewInMainContext = v;
+			changeContext((BubbleView) v);
+		}
+
+	}
+
+	private void changeContext(BubbleView bv) {
+		activeBubbleFragment.saveBubbles();
+
+		activeBubbleFragment = new BubbleFragment();
+		activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(bv.getLinks()),
+				BubbleActivity.this);
+		animateFragmentChange(bv);
+	}
+
+	private void finishToSideContext() {
+		meOnSide = true;
+		meParams.width = contextSmall;
+		meParams.height = contextSmall;
+		meParams.leftMargin = 0;
+		meParams.topMargin = ((height) - contextSmall * 3 / 2);
+		meBubble.setLayoutParams(meParams);
+	}
+
+	private void animateToTheSide(double p) {
+		meParams.width = (int) ((contextLarge * p) + (contextSmall * (1 - p)));
+		meParams.height = (int) ((contextLarge * p) + (contextSmall * (1 - p)));
+		meParams.leftMargin = (int) (((width / 2) - (contextLarge / 2)) * p);
+		meParams.topMargin = (int) (((height) - (meParams.width * 2 / 3) - (meParams.width * 2 / 3 * (1 - p))));
+		meBubble.setLayoutParams(meParams);
+	}
+
+
+	private double distanceFromCenter(View v1, View v2) {
+		float x1 = (v1.getLeft() + (v1.getWidth() / 2));
+		float y1 = (v1.getTop() + (v1.getHeight() / 2));
+		float x2 = (v2.getLeft() + (v2.getWidth() / 2));
+		float y2 = (v2.getTop() + (v2.getHeight() / 2));
+
+		return BubbleFragment.distance(x1, y1, x2, y2);
 	}
 
 	public boolean onDrop(BubbleView bv) {
 		boolean value = false;
-		if(BubbleFragment.isHit(bv, meBubble)) {
+		if(BubbleFragment.isHit(bv, contextPlaceholder)) {
+			if(viewInMainContext != null && viewInMainContext instanceof BubbleView) {
+				moveBackToFragment((BubbleView) viewInMainContext);
+				viewInMainContext = null;
+			}
+			bv.asMainContext = true;
 
+			finishToMainContext(bv);
+			finishToSideContext();
+			value = true;
+		} else if(bv.asMainContext) {
+			moveBackToFragment(bv);
 		}
 		return value;
 	}
 
-	public void moveViewInContext() {
-		
+	private void moveBackToFragment(BubbleView bv) {
+		bv.asMainContext = false;
+		bv.bubble.setGravity(Gravity.CENTER);
+		contextLayout.removeView(bv);
+		activeBubbleFragment.addBubble(bv);
 	}
 
-	public void onSideContextClick(View view) {
-
-	}
-
-	public void onMainContextClick(View view) {
-		onMeClick(view);
-	}
-
-	private void animateMeButtonHalfWay() {
-		float pivotX = 0;
-		float pivotY = 0;
-
-		Animation anim = new ScaleAnimation(1, 0.5f, 1, 0.5f, Animation.ABSOLUTE, pivotX,
-				Animation.ABSOLUTE, pivotY);
-		anim.setDuration(StaticUtils.ANIMATION_DURATION);
-		anim.setInterpolator(new LinearInterpolator());
-		anim.setFillAfter(true);
-		anim.setFillBefore(true);
-
-		meBubble.startAnimation(anim);
-	}
 
 }
