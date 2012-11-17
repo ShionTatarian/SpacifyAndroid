@@ -16,6 +16,8 @@ public class BaseBubbleView extends FrameLayout {
 
 	public static final int MOVEMENT_TOUCH_TRESHOLD = 10;
 
+	private final int DOUBLE_CLICK_DELAY = 300;
+
 	public TextView bubble, links;
 	public int movement = BubbleMovement.INERT;
 	public float diameter = 100;
@@ -39,13 +41,25 @@ public class BaseBubbleView extends FrameLayout {
 		bubble.setText(text);
 	}
 	
-	public void onTouchDown() {
+	public boolean onTouchDown() {
+		boolean value = false;
+		long currentTime = System.currentTimeMillis();
+		if(currentTime - previousTouchDown <= DOUBLE_CLICK_DELAY) {
+			value = true;
+		}
+		
+		previousTouchDown = System.currentTimeMillis();
+		
 		moved = 0;
 		movement = BubbleMovement.MOVING;
 		LayoutParams params = (LayoutParams) getLayoutParams();
 		startX = params.leftMargin;
 		startY = params.topMargin;
+		
+		return value;
 	}
+
+	private long previousTouchDown = 0;
 
 	public void onTouchUp() {
 		offsetX = 0;

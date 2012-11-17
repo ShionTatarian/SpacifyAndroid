@@ -166,7 +166,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			case MotionEvent.ACTION_DOWN:
 			case MotionEvent.ACTION_POINTER_DOWN:
 				if(bv != null) {
-					bv.onTouchDown();
+					if(bv.onTouchDown()) {
+						doubleClick(bv);
+					}
 					int dx = (int) (v.getLeft() - x + (v.getWidth() / 2));
 					int dy = (int) (v.getTop() - y + (v.getHeight() / 2));
 					bv.offsetX = dx;
@@ -246,6 +248,10 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		return true;
 	}
 
+	private void doubleClick(BubbleView bv) {
+		onBubbleViewClick(bv);
+	}
+
 	public void onSingleTouch(BubbleView bv) {
 		if(bv != null && list.containsKey(bv.getID()) && !bv.asMainContext) {
 			openControlPopup(bv);
@@ -267,6 +273,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			closePopup();
 			return;
 		}
+		controls.setAdapter(bv.getControlAdapter(this));
+
 		popup.setVisibility(View.VISIBLE);
 		controls.openMenu(bv);
 		popup.bringToFront();
@@ -571,8 +579,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			BubbleView b1 = iterator.next();
 			for(int id : b1.getLinks()) {
 				BubbleView b2 = list.get(id);
-				if(b2 != null && b1 != null && connections.length > i && b1.asMainContext
-						&& b2.asMainContext) {
+				if(b2 != null && b1 != null && connections.length > i && !b1.asMainContext
+						&& !b2.asMainContext) {
 					int[] b1Position = b1.getViewPosition();
 					int[] b2Position = b2.getViewPosition();
 

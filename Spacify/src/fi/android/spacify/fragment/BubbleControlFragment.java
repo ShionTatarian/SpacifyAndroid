@@ -17,14 +17,14 @@ public class BubbleControlFragment extends BaseFragment {
 	protected ViewGroup layout;
 	private BubbleFragment frame;
 	private BubbleView bv;
-	private ArrayAdapter<Object> adapter;
+	private ArrayAdapter<Integer> adapter;
 	protected List<View> views = new ArrayList<View>();
 
 	public void setBubbleFrame(BubbleFragment frame) {
 		this.frame = frame;
 	}
 
-	public void setAdapter(ArrayAdapter<Object> adapter) {
+	public void setAdapter(ArrayAdapter<Integer> adapter) {
 		this.adapter = adapter;
 	}
 
@@ -36,12 +36,11 @@ public class BubbleControlFragment extends BaseFragment {
 		int count = c / (controlBubbleSize * 3 / 2);
 		int angle = 360 / count;
 
-		for(int i = 0; i<count; i++) {
-			View controlBubbleFrame = LayoutInflater.from(getActivity()).inflate(
-					R.layout.control_bubble, layout, false);
-			controlBubbleFrame.setRotation((i * angle));
-			layout.addView(controlBubbleFrame);
-			views.add(controlBubbleFrame);
+		for(int i = 0; i < adapter.getCount(); i++) {
+			View v = adapter.getView(i, null, layout);
+			v.setRotation((i * angle));
+			layout.addView(v);
+			views.add(v);
 		}
 	}
 
@@ -100,4 +99,5 @@ public class BubbleControlFragment extends BaseFragment {
 			}
 		}
 	};
+
 }

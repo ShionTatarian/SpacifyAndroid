@@ -11,7 +11,10 @@ import org.json.JSONException;
 import android.content.Context;
 import android.database.Cursor;
 import android.util.Log;
+import android.widget.ArrayAdapter;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
+import fi.android.spacify.fragment.BubbleFragment;
+import fi.android.spacify.fragment.ControlAdapter;
 
 @SuppressWarnings("javadoc")
 public class BubbleView extends BaseBubbleView {
@@ -299,6 +302,13 @@ public class BubbleView extends BaseBubbleView {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	public ArrayAdapter<Integer> getControlAdapter(BubbleFragment bf) {
+		ArrayAdapter<Integer> adapter = new ControlAdapter(getContext(), this, bf);
+		adapter.add(ControlAdapter.COMMANDS.TOGGLE_LINKS);
+
+		return adapter;
 	}
 
 }

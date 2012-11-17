@@ -343,11 +343,13 @@ public class BubbleActivity extends BaseActivity {
 			meOnSide = false;
 		}
 		if(!meOnSide && BubbleFragment.isHit(bv, contextPlaceholder)) {
+			roundListFragment.toggleOpen(false);
 			double d = distanceFromCenter(bv, contextPlaceholder);
 			if(d != 0) {
 				animateToTheSide((d / contextPlaceholder.getWidth()));
 			}
 		} else if(meOnSide && BubbleFragment.isHit(bv, contextPlaceholder)) {
+			roundListFragment.toggleOpen(false);
 			double d = distanceFromCenter(bv, contextPlaceholder);
 			if(d != 0) {
 				if(viewInMainContext != null && viewInMainContext instanceof BubbleView
@@ -362,13 +364,18 @@ public class BubbleActivity extends BaseActivity {
 					animateToTheSide((d / contextPlaceholder.getWidth()));
 				}
 			}
+		} else if(BubbleFragment.isHit(bv, roundList)) {
+			roundListFragment.toggleOpen(true);
+		
 		} else if(!meOnSide) {
 			// snap last large context back if not dropped down inside
 			// contextPlaceholder
 			finishToMainContext(meBubble);
+			roundListFragment.toggleOpen(false);
 		} else if(meOnSide && viewInMainContext == bv) {
 			finishToMainContext(meBubble);
 			meOnSide = false;
+			roundListFragment.toggleOpen(false);
 		}
 	}
 
@@ -460,6 +467,8 @@ public class BubbleActivity extends BaseActivity {
 			finishToMainContext(bv);
 			finishToSideContext();
 			value = true;
+		} else if(BubbleFragment.isHit(bv, roundList)) {
+			roundListFragment.addBubble(bv);
 		} else if(bv.asMainContext) {
 			moveBackToFragment(bv);
 		}
