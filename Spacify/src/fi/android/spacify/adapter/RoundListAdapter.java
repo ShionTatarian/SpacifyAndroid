@@ -19,15 +19,22 @@ public class RoundListAdapter extends CircularAdapter<BubbleView> {
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 		if(convertView == null) {
-			convertView = LayoutInflater.from(getContext()).inflate(R.layout.control_bubble, parent, false);		
-			convertView.setTag(new ViewHolder(convertView));
+			convertView = getEmptyView(parent);
 		}
 		ViewHolder holder = (ViewHolder) convertView.getTag();
 		holder.position = position;
 		BubbleView bv = getItem(position);
-		holder.text.setText(bv.getTitle());
+		if(bv != null) {
+			holder.text.setText(bv.getTitle());
+		}
 		
 		return convertView;
+	}
+
+	public View getEmptyView(ViewGroup parent) {
+		View v = LayoutInflater.from(getContext()).inflate(R.layout.control_bubble, parent, false);
+		v.setTag(new ViewHolder(v));
+		return v;
 	}
 
 	public class ViewHolder {

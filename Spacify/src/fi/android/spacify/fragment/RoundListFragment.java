@@ -6,6 +6,7 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -15,6 +16,7 @@ import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import fi.android.service.WorkService;
 import fi.android.spacify.R;
+import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.adapter.RoundListAdapter;
 import fi.android.spacify.adapter.RoundListAdapter.ViewHolder;
 import fi.android.spacify.service.ContentManagementService;
@@ -31,7 +33,7 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 	private final BaseSettings settings = BaseSettings.getInstance();
 	private final ContentManagementService cms = ContentManagementService.getInstance();
 
-	private float startX, startY;
+	private float startX = 0, startY = 0;
 	private int angle, count;
 	private int lastPosition = 0;
 	private float rotation = 0;
@@ -39,6 +41,17 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 	private RoundListAdapter adapter;
 
 	private JSONArray bubbleLinks;
+
+	private BubbleActivity bubbleActivity;
+
+	@Override
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
+
+		if(activity instanceof BubbleActivity) {
+			bubbleActivity = (BubbleActivity) activity;
+		}
+	}
 
 	@Override
 	public void setSize(int size) {
@@ -72,17 +85,22 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 		int midStart = adapter.getMiddle();
 		lastPosition = midStart;
 		for(int j = 0; j < count; j++) {
+			int position = midStart + j;
+			View v;
+			ViewHolder h;
 			if(adapter.getRealCount() > j) {
-				int position = midStart + j;
-				View controlBubbleFrame = adapter.getView(position, null, layout);
-				controlBubbleFrame.setRotation((position * angle));
-				layout.addView(controlBubbleFrame);
-				views.add(controlBubbleFrame);
+				v = adapter.getView(position, null, layout);
+				v.setRotation((position * angle));
 				lastPosition += 1;
 			} else {
-				View empty = LayoutInflater.from(getActivity()).inflate(R.layout.control_bubble, layout, false);
-				empty.setVisibility(View.GONE);
+				v = adapter.getEmptyView(layout);
+				v.setRotation((position * angle));
+//				empty.setVisibility(View.GONE);
 			}
+			h = (ViewHolder) v.getTag();
+			h.text.setOnTouchListener(this);
+			layout.addView(v);
+			views.add(v);
 		}
 	}
 
@@ -93,24 +111,45 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 		float x = event.getRawX();
 		float y = event.getRawY();
 
+		float nX = x - startX;
+		float nY = y - startY;
+		tempRot = ((rotation + ((nX) / 3)) % 360);
+
 		switch (event.getAction()) {
 			case MotionEvent.ACTION_DOWN:
 				startX = x;
 				startY = y;
 				break;
 			case MotionEvent.ACTION_MOVE:
-				tempRot = ((rotation + ((x - startX) / 3)) % 360);
-				v.setRotation(tempRot);
+				layout.setRotation(tempRot);
 				makeViewAtBottomInvisible(tempRot);
 				break;
 			case MotionEvent.ACTION_UP:
 				rotation = tempRot;
+				BubbleView bv = null;
+				ViewHolder h = (ViewHolder) v.getTag();
+				if(h != null) {
+					bv = adapter.getItem(h.position);
+				} else {
+					h = (ViewHolder) ((View) v.getParent()).getTag();
+					if(h != null) {
+						bv = adapter.getItem(h.position);
+					}
+				}
+				if(bv != null && nX < 20 && nY < 20) {
+					Log.d("RoundFrag", "bv: " + bv.getTitle());
+					onBubbleClick(bv);
+				}
 				break;
 			default:
 				break;
 		}
 
 		return true;
+	}
+
+	private void onBubbleClick(BubbleView bv) {
+		bubbleActivity.changeContext(bv);
 	}
 
 	private boolean openTop = false;
@@ -165,20 +204,20 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 			while(System.currentTimeMillis() <= stop) {
 				final double pulse = ((stop - System.currentTimeMillis()) / (float) (StaticUtils.ANIMATION_DURATION * 2));
 
-				Log.d("close", "pulse: " + pulse);
 				for(int i = 0; i < views.size(); i++) {
 					final int j = i;
 					final View v = views.get(i);
 					if(v != null) {
-						final float vRot = rotation + v.getRotation();
+						final float vRot = Math.abs((rotation + v.getRotation()) % 360);
+						Log.d("close", "vRot: " + vRot);
 						v.post(new Runnable() {
 
 							@Override
 							public void run() {
 								if(vRot < 180) {
-									v.setRotation((float) ((j + 1) * angle + ((angle) * pulse)));
+									v.setRotation((float) ((j + 1) * angle + ((angle / 2) * pulse)));
 								} else {
-									v.setRotation((float) ((j == 0 ? 1 : j + 1) * angle - ((angle) * pulse)));
+									v.setRotation((float) ((j + 1) * angle - ((angle / 2) * pulse)));
 								}
 							}
 						});
@@ -203,21 +242,20 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 			while(System.currentTimeMillis() <= stop) {
 				final double pulse = ((stop - System.currentTimeMillis()) / (float) (StaticUtils.ANIMATION_DURATION * 2));
 
-				Log.d("open", "pulse: " + pulse);
-
 				for(int i = 0; i < views.size(); i++) {
 					final int j = i;
 					final View v = views.get(i);
 					if(v != null) {
-						final float vRot = rotation + v.getRotation();
+						final float vRot = Math.abs((rotation + v.getRotation()) % 360);
+						Log.d("open", "vRot: " + vRot);
 						v.post(new Runnable() {
 
 							@Override
 							public void run() {
 								if(vRot < 180) {
-									v.setRotation((float) ((j + 1) * angle - ((angle) * pulse)));
+									v.setRotation((float) ((j + 1) * angle - ((angle / 2) * pulse)));
 								} else {
-									v.setRotation((float) ((j == 0 ? 1 : j + 1) * angle + ((angle) * pulse)));
+									v.setRotation((float) ((j + 1) * angle + ((angle / 2) * pulse)));
 								}
 							}
 						});
@@ -247,12 +285,14 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 						&& v.getVisibility() == View.VISIBLE) {
 					v.setVisibility(View.INVISIBLE);
 					layout.removeView(v);
-					if(this.rotation < rotation) {
-						lastPosition += 1;
-						v = adapter.getView(lastPosition, v, layout);
-					} else {
-						lastPosition -= 1;
-						v = adapter.getView(lastPosition, v, layout);
+					if(adapter.getRealCount() > count) {
+						if(this.rotation < rotation) {
+							lastPosition += 1;
+							v = adapter.getView(lastPosition, v, layout);
+						} else {
+							lastPosition -= 1;
+							v = adapter.getView(lastPosition, v, layout);
+						}
 					}
 					Log.d("getFromAdapter", "next:" + lastPosition);
 					layout.addView(v);

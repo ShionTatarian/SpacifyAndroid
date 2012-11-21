@@ -238,7 +238,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				if(bv != null) {
 					bv.onTouchUp();
 					if(parentActivity.onDrop(bv)) {
-						// list.remove(bv.getID());
+						list.remove(bv.getID());
 					}
 				}
 

@@ -419,7 +419,7 @@ public class BubbleActivity extends BaseActivity {
 
 	}
 
-	private void changeContext(BubbleView bv) {
+	public void changeContext(BubbleView bv) {
 		activeBubbleFragment.saveBubbles();
 
 		activeBubbleFragment = new BubbleFragment();
@@ -466,9 +466,9 @@ public class BubbleActivity extends BaseActivity {
 
 			finishToMainContext(bv);
 			finishToSideContext();
-			value = true;
 		} else if(BubbleFragment.isHit(bv, roundList)) {
 			roundListFragment.addBubble(bv);
+			value = true;
 		} else if(bv.asMainContext) {
 			moveBackToFragment(bv);
 		}

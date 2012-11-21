@@ -6,7 +6,6 @@ import java.util.List;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import fi.android.spacify.R;
@@ -58,46 +57,5 @@ public class BubbleControlFragment extends BaseFragment {
 	public void closeMenu() {
 
 	}
-
-	private OnClickListener onLinkClick = new OnClickListener() {
-
-		@Override
-		public void onClick(View v) {
-			if(bv != null && frame != null) {
-				frame.onBubbleViewClick(bv);
-				frame.closePopup();
-			}
-		}
-	};
-
-	private OnClickListener on90Click = new OnClickListener() {
-
-		@Override
-		public void onClick(View v) {
-			if(bv != null && frame != null) {
-				frame.closePopup();
-			}
-		}
-	};
-
-	private OnClickListener on180Click = new OnClickListener() {
-
-		@Override
-		public void onClick(View v) {
-			if(bv != null && frame != null) {
-				frame.closePopup();
-			}
-		}
-	};
-
-	private OnClickListener on270Click = new OnClickListener() {
-
-		@Override
-		public void onClick(View v) {
-			if(bv != null && frame != null) {
-				frame.closePopup();
-			}
-		}
-	};
 
 }
