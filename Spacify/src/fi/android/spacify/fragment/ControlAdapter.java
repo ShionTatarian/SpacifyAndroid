@@ -15,6 +15,7 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 
 	public class COMMANDS {
 		public static final int TOGGLE_LINKS = 1000;
+		public static final int PLAY = 1001;
 	}
 
 	private BubbleView bv;
@@ -34,11 +35,21 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 		}
 		ViewHolder holder = (ViewHolder) convertView.getTag();
 		int item = getItem(position);
-		if(item == COMMANDS.TOGGLE_LINKS) {
-			convertView.setOnClickListener(toggleLinks);
-			holder.text.setVisibility(View.GONE);
-			holder.image.setVisibility(View.VISIBLE);
-			holder.image.setImageResource(android.R.drawable.ic_menu_share);
+
+		switch (item) {
+			default:
+			case COMMANDS.TOGGLE_LINKS:
+				convertView.setOnClickListener(toggleLinks);
+				holder.text.setVisibility(View.GONE);
+				holder.image.setVisibility(View.VISIBLE);
+				holder.image.setImageResource(android.R.drawable.ic_menu_share);
+				break;
+			case COMMANDS.PLAY:
+				convertView.setOnClickListener(onPlayClick);
+				holder.text.setVisibility(View.GONE);
+				holder.image.setVisibility(View.VISIBLE);
+				holder.image.setImageResource(android.R.drawable.ic_media_play);
+				break;
 		}
 
 		return convertView;
@@ -49,6 +60,14 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 		@Override
 		public void onClick(View v) {
 			bf.onBubbleViewClick(bv);
+		}
+	};
+
+	private OnClickListener onPlayClick = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			bf.onPlayClick(bv);
 		}
 	};
 

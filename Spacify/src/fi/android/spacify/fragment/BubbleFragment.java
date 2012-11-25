@@ -34,6 +34,7 @@ import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BaseBubbleView;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.ConnectionLayout;
+import fi.android.spacify.view.ThirdLayer;
 import fi.spacify.android.util.Events;
 import fi.spacify.android.util.StaticUtils;
 
@@ -58,6 +59,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	private BubbleActivity parentActivity;
 	
+	private ThirdLayer thirdLayer = null;
+
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
@@ -139,7 +142,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		return super.handleMessage(msg);
 	}
 
-	private BubbleView firstTouched = null;
+	private BaseBubbleView firstTouched = null;
 	private double initialD = -1;
 
 	@Override
@@ -148,9 +151,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		float x = event.getRawX();
 		float y = event.getRawY();
 
-		BubbleView bv = null;
-		if(v instanceof BubbleView) {
-			bv = (BubbleView) v;
+		BaseBubbleView bv = null;
+		if(v instanceof BaseBubbleView) {
+			bv = (BaseBubbleView) v;
 			if(event.getPointerCount() == 1) {
 				firstTouched = bv;
 			}
@@ -166,8 +169,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			case MotionEvent.ACTION_DOWN:
 			case MotionEvent.ACTION_POINTER_DOWN:
 				if(bv != null) {
-					if(bv.onTouchDown()) {
-						doubleClick(bv);
+					if(bv.onTouchDown() && bv instanceof BubbleView) {
+						doubleClick((BubbleView) bv);
 					}
 					int dx = (int) (v.getLeft() - x + (v.getWidth() / 2));
 					int dy = (int) (v.getTop() - y + (v.getHeight() / 2));
@@ -185,7 +188,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			case MotionEvent.ACTION_MOVE:
 				if(bv != null) {
 					bv.move((int) x, (int) y);
-					testHit(bv);
+					if(bv instanceof BubbleView) {
+						testHit((BubbleView) bv);
+					}
 
 					if(openPopupView == bv) {
 						LayoutParams params = (LayoutParams) popup.getLayoutParams();
@@ -194,7 +199,6 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 						popup.setLayoutParams(params);
 					}
 
-					parentActivity.onDrag(bv);
 				}
 
 				if(firstTouched != null && event.getPointerCount() == 2) {
@@ -227,8 +231,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				if(firstTouched != null) {
 					firstTouched.endZoom();
 					if(event.getPointerCount() == 1) {
-						if(firstTouched.moved <= BaseBubbleView.MOVEMENT_TOUCH_TRESHOLD) {
-							onSingleTouch(bv);
+						if(firstTouched.moved <= BaseBubbleView.MOVEMENT_TOUCH_TRESHOLD
+								&& bv instanceof BubbleView) {
+							onSingleTouch((BubbleView) bv);
 						}
 						firstTouched = null;
 					}
@@ -237,9 +242,6 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 				if(bv != null) {
 					bv.onTouchUp();
-					if(parentActivity.onDrop(bv)) {
-						list.remove(bv.getID());
-					}
 				}
 
 				break;
@@ -331,21 +333,23 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	public void onBubbleViewClick(BubbleView bv) {
 		if(!animationInProgress) {
-			Random r = new Random();
-			if(hasChildsVisible(bv)) {
-				removeBubbles(bv.getLinks(), bv);
-				checkChildCount();
-				return;
-			}
+			parentActivity.addContext(bv);
 
-			for(final BubbleView nBubble : cms.getBubbles(bv.getLinks())) {
-				if(!list.containsKey(nBubble.getID())) {
-					Log.d(TAG, "New Bubble [" + nBubble.getTitle() + "]");
-					animateBubbleAdd(nBubble, bv);
-				}
-			}
-			updateConnections();
-			checkChildCount();
+			// Random r = new Random();
+			// if(hasChildsVisible(bv)) {
+			// removeBubbles(bv.getLinks(), bv);
+			// checkChildCount();
+			// return;
+			// }
+			//
+			// for(final BubbleView nBubble : cms.getBubbles(bv.getLinks())) {
+			// if(!list.containsKey(nBubble.getID())) {
+			// Log.d(TAG, "New Bubble [" + nBubble.getTitle() + "]");
+			// animateBubbleAdd(nBubble, bv);
+			// }
+			// }
+			// updateConnections();
+			// checkChildCount();
 		}
 	}
 
@@ -598,6 +602,10 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	private void onEmptyClick() {
+		if(thirdLayer != null) {
+			frame.removeView(thirdLayer);
+			thirdLayer = null;
+		}
 		((BubbleActivity) getActivity()).onEmptyClick();
 	}
 
@@ -607,6 +615,15 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	public boolean hasView(BubbleView bv) {
 		return list.containsKey(bv.getID());
+	}
+
+	public void onPlayClick(BubbleView bv) {
+		thirdLayer = new ThirdLayer(parentActivity);
+		thirdLayer.setOnTouchListener(this);
+		frame.addView(thirdLayer);
+		thirdLayer.move(bv.x, bv.y);
+		thirdLayer.zoom(2);
+		thirdLayer.endZoom();
 	}
 
 }

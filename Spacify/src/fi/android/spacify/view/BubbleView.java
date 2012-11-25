@@ -12,6 +12,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.util.Log;
 import android.widget.ArrayAdapter;
+import fi.android.spacify.R;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
 import fi.android.spacify.fragment.BubbleFragment;
 import fi.android.spacify.fragment.ControlAdapter;
@@ -55,7 +56,7 @@ public class BubbleView extends BaseBubbleView {
 	public boolean linkStatusChanged = false;
 	public boolean lockedToPlase = false;
 
-	private int priority, id;
+	private int priority;
 	private String debugID = "", type = "", style = "", title = "", contents = "", titleImageUrl = "",
 			contentImageUrl = "";
 	private List<Integer> links = new ArrayList<Integer>();
@@ -133,15 +134,6 @@ public class BubbleView extends BaseBubbleView {
 			}
 		}
 		return super.equals(o);
-	}
-
-	/**
-	 * Get id of this Bubble.
-	 * 
-	 * @return ID as integer
-	 */
-	public int getID() {
-		return id;
 	}
 
 	/**
@@ -307,8 +299,14 @@ public class BubbleView extends BaseBubbleView {
 	public ArrayAdapter<Integer> getControlAdapter(BubbleFragment bf) {
 		ArrayAdapter<Integer> adapter = new ControlAdapter(getContext(), this, bf);
 		adapter.add(ControlAdapter.COMMANDS.TOGGLE_LINKS);
+		adapter.add(ControlAdapter.COMMANDS.PLAY);
 
 		return adapter;
+	}
+
+	@Override
+	protected int getLayout() {
+		return R.layout.base_bubble;
 	}
 
 }

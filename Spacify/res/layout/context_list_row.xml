@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/context_text"
+        android:layout_width="@dimen/context_me_side"
+        android:layout_height="@dimen/context_me_side"
+        android:background="@drawable/lightblueball"
+        android:gravity="center"
+        android:padding="8dp"
+        android:textColor="@android:color/white"
+        android:textSize="9dp" />
+
+</FrameLayout>

@@ -5,6 +5,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import fi.android.spacify.R;
 import fi.android.spacify.activity.BubbleActivity;
@@ -12,13 +13,16 @@ import fi.android.spacify.fragment.BubbleFragment;
 import fi.android.spacify.view.BubbleView.BubbleMovement;
 
 @SuppressWarnings("javadoc")
-public class BaseBubbleView extends FrameLayout {
+public abstract class BaseBubbleView extends FrameLayout {
 
 	public static final int MOVEMENT_TOUCH_TRESHOLD = 10;
 
 	private final int DOUBLE_CLICK_DELAY = 300;
-
-	public TextView bubble, links;
+	
+	protected int id;
+	
+	public View bubble;
+	public TextView links;
 	public int movement = BubbleMovement.INERT;
 	public float diameter = 100;
 	public int x, y;
@@ -28,17 +32,21 @@ public class BaseBubbleView extends FrameLayout {
 
 	public BaseBubbleView(Context context) {
 		super(context);
-		LayoutInflater.from(context).inflate(R.layout.base_bubble, this, true);
-		bubble = (TextView) findViewById(R.id.base_bubble_bubble);
+		LayoutInflater.from(context).inflate(getLayout(), this, true);
+		bubble = findViewById(R.id.base_bubble_bubble);
 		links = (TextView) findViewById(R.id.base_bubble_link_count);
 
 		setLayoutParams(new LayoutParams(android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
 				android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-				Gravity.CENTER));
+ Gravity.TOP));
 	}
 
+	protected abstract int getLayout();
+
 	protected void setText(String text) {
-		bubble.setText(text);
+		if(bubble instanceof TextView) {
+			((TextView) bubble).setText(text);
+		}
 	}
 	
 	public boolean onTouchDown() {
@@ -78,7 +86,7 @@ public class BaseBubbleView extends FrameLayout {
 	}
 
 	public void endZoom() {
-		diameter = bubble.getWidth();
+		diameter = getWidth();
 	}
 
 	public void setLinkCount(int count) {
@@ -96,9 +104,14 @@ public class BaseBubbleView extends FrameLayout {
 		params.height = d;
 		setLayoutParams(params);
 
-		bubble.setWidth(d);
-		bubble.setHeight(d);
-		bubble.postInvalidate();
+		if(bubble != null) {
+			RelativeLayout.LayoutParams bParams = (RelativeLayout.LayoutParams) bubble
+					.getLayoutParams();
+			bParams.width = d;
+			bParams.height = d;
+			bubble.setLayoutParams(bParams);
+		}
+		postInvalidate();
 	}
 
 	public void move(int x, int y) {
@@ -145,11 +158,20 @@ public class BaseBubbleView extends FrameLayout {
 	}
 
 	public int getRadius() {
-		int radius = (bubble.getWidth() / 2);
+		int radius = (getWidth() / 2);
 		if(radius == 0) {
 			radius = (int) (diameter / 2);
 		}
 		return radius;
+	}
+
+	/**
+	 * Get id of this Bubble.
+	 * 
+	 * @return ID as integer
+	 */
+	public int getID() {
+		return id;
 	}
 
 }

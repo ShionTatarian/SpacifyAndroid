@@ -12,40 +12,6 @@
         android:layout_height="match_parent" >
     </FrameLayout>
 
-    <FrameLayout
-        android:id="@+id/context_layout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true" >
-
-        <View
-            android:id="@+id/context_placeholder"
-            android:layout_width="@dimen/context_placeholder"
-            android:layout_height="@dimen/context_placeholder"
-            android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="-90dp"
-            android:background="@drawable/transparentball" />
-
-        <FrameLayout
-            android:id="@+id/context_round_list"
-            android:layout_width="@dimen/context_round_list"
-            android:layout_height="@dimen/context_round_list"
-            android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="-150dp" >
-        </FrameLayout>
-
-        <Button
-            android:id="@+id/button_me"
-            android:layout_width="@dimen/context_me"
-            android:layout_height="@dimen/context_me"
-            android:background="@drawable/greenball"
-            android:gravity="top|center_horizontal"
-            android:onClick="onMeClick"
-            android:padding="20dp"
-            android:text="ME" />
-    </FrameLayout>
-
     <ImageView
         android:id="@+id/search_button"
         android:layout_width="@dimen/search_button_width"
@@ -75,5 +41,33 @@
             android:layout_height="@dimen/search_bubble_size"
             android:spacing="@dimen/margin_normal" />
     </LinearLayout>
+
+    <ListView
+        android:id="@+id/context_list"
+        android:layout_width="@dimen/context_me_side"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/button_me"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/search_layout"
+        android:layout_marginBottom="-20dp"
+        android:cacheColorHint="@android:color/transparent"
+        android:divider="@android:color/transparent"
+        android:listSelector="@android:color/transparent"
+        android:stackFromBottom="true" >
+    </ListView>
+
+    <Button
+        android:id="@+id/button_me"
+        android:layout_width="@dimen/context_me"
+        android:layout_height="@dimen/context_me"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="-75dp"
+        android:layout_marginRight="-75dp"
+        android:background="@drawable/greenball"
+        android:gravity="left"
+        android:onClick="onMeClick"
+        android:padding="40dp"
+        android:text="ME" />
 
 </RelativeLayout>
