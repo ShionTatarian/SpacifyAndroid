@@ -70,7 +70,7 @@ public class BubbleActivity extends BaseActivity {
 	private boolean tierOneOpen = false;
 	private boolean tierTwoOpen = false;
 
-	private View t1, t2;
+	private View t0, t1, t2, meContextView;
 
 	private TierZeroFragment tierZero;
 
@@ -85,8 +85,10 @@ public class BubbleActivity extends BaseActivity {
 		height = metrics.heightPixels;
 		width = metrics.widthPixels;
 
+		t0 = findViewById(R.id.tier_zero);
 		t1 = findViewById(R.id.tier_one);
 		t2 = findViewById(R.id.tier_two);
+		meContextView = findViewById(R.id.round_context_list);
 
 		meContextAdapter = new MeContextAdapter(this);
 		meContextAdapter.addAll(cms.getBubblesFromCursor(cms
@@ -451,7 +453,7 @@ public class BubbleActivity extends BaseActivity {
 		}
 	};
 
-	public void setTierZero(View from, BubbleView bv) {
+	public void setTierZero(BubbleView bv, Animation anim) {
 		if(tierOne != null) {
 			removeFragment(tierOne);
 		}
@@ -459,9 +461,28 @@ public class BubbleActivity extends BaseActivity {
 			removeFragment(tierTwo);
 		}
 
+		t0.startAnimation(anim);
+
 		tierZero = new TierZeroFragment();
 		tierZero.setBubbleView(bv);
 		changeFragment(R.id.tier_zero, tierZero);
+	}
+
+	public void setTierZeroFromMeContext(View from, BubbleView bv) {
+		from = (View) from.getParent();
+
+		float rotation = (from.getRotation() / 90);
+		float size = meContextView.getWidth();
+		float pivotX = (rotation * (size / 2)) / width;
+		float pivotY = 1f - (((1f - rotation) * (size / 2)) / height);
+
+		Animation anim = new ScaleAnimation(0, 1, 0, 1, 
+				Animation.RELATIVE_TO_PARENT, pivotX,
+				Animation.RELATIVE_TO_PARENT, pivotY);
+		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+		anim.setInterpolator(new AccelerateInterpolator());
+
+		setTierZero(bv, anim);
 	}
 
 	public void setTierOne(BubbleView bv) {

@@ -12,7 +12,7 @@ public class MeContextAdapter extends WheelAdapter {
 
 	@Override
 	public void onSingleClick(View from, BubbleView bv) {
-		bubbleAct.setTierZero(from, bv);
+		bubbleAct.setTierZeroFromMeContext(from, bv);
 	}
 
 }
