@@ -22,9 +22,17 @@
     <dimen name="search_button_width">25dp</dimen>
 
     <!-- Context sizes -->
-    <dimen name="context_round_list">250dp</dimen>
+    <dimen name="context_round_list">265dp</dimen>
     <dimen name="context_me">150dp</dimen>
     <dimen name="context_placeholder">140dp</dimen>
     <dimen name="context_me_side">50dp</dimen>
+
+    <!-- Tiers -->
+    <dimen name="tier_one">700dp</dimen>
+    <dimen name="tier_one_offset">-350dp</dimen>
+    <dimen name="tier_one_bubble">100dp</dimen>
+    <dimen name="tier_two">750dp</dimen>
+    <dimen name="tier_two_offset">-300dp</dimen>
+    <dimen name="tier_two_bubble">50dp</dimen>
 
 </resources>

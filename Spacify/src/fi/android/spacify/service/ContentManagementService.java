@@ -119,6 +119,18 @@ public class ContentManagementService extends BaseService {
 		return db.getBubblesInContext(context);
 	}
 
+	public List<BubbleView> getBubblesFromCursor(Cursor c) {
+		List<BubbleView> list = new ArrayList<BubbleView>();
+		c.moveToFirst();
+		while(!c.isAfterLast()) {
+			list.add(new BubbleView(context, c));
+			c.moveToNext();
+		}
+		c.close();
+
+		return list;
+	}
+
 	public List<BubbleView> getBubbles(List<Integer> links) {
 		Cursor c = db.getLinkedBubblesCursor(links);
 		List<BubbleView> bubbles = new ArrayList<BubbleView>();

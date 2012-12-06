@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:layout_gravity="center" >
+
+    <FrameLayout
+        android:id="@+id/wheel_touch_area"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/margin_double" >
+
+        <ImageView
+            android:id="@+id/wheel_background"
+            android:layout_width="@dimen/tier_one_bubble"
+            android:layout_height="@dimen/tier_one_bubble"
+            android:background="@drawable/greenball"
+            android:padding="@dimen/margin_normal"
+            android:scaleType="fitCenter"
+            android:visibility="visible" />
+
+        <TextView
+            android:id="@+id/wheel_text"
+            android:layout_width="@dimen/tier_one_bubble"
+            android:layout_height="@dimen/tier_one_bubble"
+            android:gravity="center"
+            android:padding="@dimen/margin_normal"
+            android:visibility="visible" />
+    </FrameLayout>
+
+</FrameLayout>

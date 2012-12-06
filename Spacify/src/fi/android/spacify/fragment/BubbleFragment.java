@@ -9,6 +9,7 @@ import java.util.Random;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
@@ -29,6 +30,7 @@ import android.view.animation.ScaleAnimation;
 import android.widget.FrameLayout.LayoutParams;
 import fi.android.spacify.R;
 import fi.android.spacify.activity.BubbleActivity;
+import fi.android.spacify.activity.VideoActivity;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BaseBubbleView;
@@ -153,16 +155,13 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 		BaseBubbleView bv = null;
 		if(v instanceof BaseBubbleView) {
+			v.bringToFront();
 			bv = (BaseBubbleView) v;
 			if(event.getPointerCount() == 1) {
 				firstTouched = bv;
 			}
 		}
 		
-		if(closePopupAnimation != null && bv == null) {
-			closePopup();
-		}
-
 		int action = (event.getAction() & MotionEvent.ACTION_MASK);
 
 		switch (action) {
@@ -180,54 +179,57 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 					if(bv.getID() != firstTouched.getID()) {
 						firstTouched = null;
 					}
-				} else {
-					onEmptyClick();
 				}
-
 				break;
 			case MotionEvent.ACTION_MOVE:
-				if(bv != null) {
-					bv.move((int) x, (int) y);
-					if(bv instanceof BubbleView) {
-						testHit((BubbleView) bv);
-					}
-
-					if(openPopupView == bv) {
-						LayoutParams params = (LayoutParams) popup.getLayoutParams();
-						params.leftMargin = bv.getLeft() + (bv.getWidth() / 2) - (popup.getWidth() /2);
-						params.topMargin = bv.getTop() + (bv.getHeight() / 2)- (popup.getHeight() /2);
-						popup.setLayoutParams(params);
-					}
-
-				}
-
-				if(firstTouched != null && event.getPointerCount() == 2) {
-					float x1 = event.getX(event.getPointerId(0));
-					float y1 = event.getY(event.getPointerId(0));
-					float x2 = event.getX(event.getPointerId(1));
-					float y2 = event.getY(event.getPointerId(1));
-
-					double d = distance(x1, y1, x2, y2);
-					if(initialD < 0) {
-						initialD = d;
-					} else {
-						firstTouched.zoom(d / initialD);
-						if(closePopupAnimation != null && openPopupView == bv) {
-							int size = (bv.getWidth() * 2);
-							controls.setSize(size);
-							final LayoutParams params = (LayoutParams) popup.getLayoutParams();
-							params.width = size;
-							params.height = size;
-							params.leftMargin = bv.getLeft() + (bv.getWidth() / 2) - (popup.getWidth() /2);
-							params.topMargin = bv.getTop() + (bv.getHeight() / 2)- (popup.getHeight() /2);
-							popup.setLayoutParams(params);
-						}
-					}
-				}
+//				if(bv != null) {
+//					bv.move((int) x, (int) y);
+//					if(bv instanceof BubbleView) {
+//						testHit((BubbleView) bv);
+//					}
+//
+//					if(openPopupView == bv) {
+//						LayoutParams params = (LayoutParams) popup.getLayoutParams();
+//						params.leftMargin = bv.getLeft() + (bv.getWidth() / 2) - (popup.getWidth() /2);
+//						params.topMargin = bv.getTop() + (bv.getHeight() / 2)- (popup.getHeight() /2);
+//						popup.setLayoutParams(params);
+//					}
+//
+//				}
+//
+//				if(firstTouched != null && event.getPointerCount() == 2) {
+//					float x1 = event.getX(event.getPointerId(0));
+//					float y1 = event.getY(event.getPointerId(0));
+//					float x2 = event.getX(event.getPointerId(1));
+//					float y2 = event.getY(event.getPointerId(1));
+//
+//					double d = distance(x1, y1, x2, y2);
+//					if(initialD < 0) {
+//						initialD = d;
+//					} else {
+//						firstTouched.zoom(d / initialD);
+//						if(closePopupAnimation != null && openPopupView == bv) {
+//							int size = (bv.getWidth() * 2);
+//							controls.setSize(size);
+//							final LayoutParams params = (LayoutParams) popup.getLayoutParams();
+//							params.width = size;
+//							params.height = size;
+//							params.leftMargin = bv.getLeft() + (bv.getWidth() / 2)
+//									- (popup.getWidth() / 2);
+//							params.topMargin = bv.getTop() + (bv.getHeight() / 2)
+//									- (popup.getHeight() / 2);
+//							popup.setLayoutParams(params);
+//						}
+//					}
+//				}
 
 				break;
 			case MotionEvent.ACTION_UP:
 			case MotionEvent.ACTION_POINTER_UP:
+				if(closePopupAnimation != null && bv == null) {
+					closePopup();
+				}
+
 				if(firstTouched != null) {
 					firstTouched.endZoom();
 					if(event.getPointerCount() == 1) {
@@ -242,6 +244,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 				if(bv != null) {
 					bv.onTouchUp();
+				} else if(firstTouched == null) {
+					onEmptyClick();
 				}
 
 				break;
@@ -617,13 +621,23 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		return list.containsKey(bv.getID());
 	}
 
-	public void onPlayClick(BubbleView bv) {
+	public void onImageClick(BubbleView bv) {
 		thirdLayer = new ThirdLayer(parentActivity);
 		thirdLayer.setOnTouchListener(this);
 		frame.addView(thirdLayer);
+		thirdLayer.onTouchDown();
 		thirdLayer.move(bv.x, bv.y);
-		thirdLayer.zoom(2);
-		thirdLayer.endZoom();
+		thirdLayer.onTouchUp();
+	}
+
+	public void onPlayClick(BubbleView bv) {
+		Intent intent = new Intent(getActivity(), VideoActivity.class);
+		startActivity(intent);
+	}
+
+	public void onEditClick(BubbleView bv) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

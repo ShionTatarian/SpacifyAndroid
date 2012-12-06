@@ -24,9 +24,9 @@ public abstract class BaseBubbleView extends FrameLayout {
 	public View bubble;
 	public TextView links;
 	public int movement = BubbleMovement.INERT;
-	public float diameter = 100;
+	public float diameter = 150;
 	public int x, y;
-	private int startX, startY;
+	private int startX = 0, startY = 0;
 	public double moved = 0;
 	public boolean asMainContext = false;
 
@@ -86,7 +86,10 @@ public abstract class BaseBubbleView extends FrameLayout {
 	}
 
 	public void endZoom() {
-		diameter = getWidth();
+		int w = getWidth();
+		if(w != 0) {
+			diameter = w;
+		}
 	}
 
 	public void setLinkCount(int count) {
@@ -111,7 +114,6 @@ public abstract class BaseBubbleView extends FrameLayout {
 			bParams.height = d;
 			bubble.setLayoutParams(bParams);
 		}
-		postInvalidate();
 	}
 
 	public void move(int x, int y) {

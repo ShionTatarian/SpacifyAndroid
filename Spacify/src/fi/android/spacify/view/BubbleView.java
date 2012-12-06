@@ -299,8 +299,8 @@ public class BubbleView extends BaseBubbleView {
 	public ArrayAdapter<Integer> getControlAdapter(BubbleFragment bf) {
 		ArrayAdapter<Integer> adapter = new ControlAdapter(getContext(), this, bf);
 		adapter.add(ControlAdapter.COMMANDS.TOGGLE_LINKS);
-		adapter.add(ControlAdapter.COMMANDS.PLAY);
-
+		adapter.add(ControlAdapter.COMMANDS.IMAGE);
+		adapter.add(ControlAdapter.COMMANDS.VIDEO);
 		return adapter;
 	}
 

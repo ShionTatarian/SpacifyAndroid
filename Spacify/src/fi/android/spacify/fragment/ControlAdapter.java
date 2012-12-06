@@ -15,7 +15,9 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 
 	public class COMMANDS {
 		public static final int TOGGLE_LINKS = 1000;
-		public static final int PLAY = 1001;
+		public static final int IMAGE = 1001;
+		public static final int VIDEO = 1002;
+		public static final int EDIT = 1003;
 	}
 
 	private BubbleView bv;
@@ -39,16 +41,28 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 		switch (item) {
 			default:
 			case COMMANDS.TOGGLE_LINKS:
-				convertView.setOnClickListener(toggleLinks);
 				holder.text.setVisibility(View.GONE);
 				holder.image.setVisibility(View.VISIBLE);
+				holder.image.setOnClickListener(toggleLinks);
 				holder.image.setImageResource(android.R.drawable.ic_menu_share);
 				break;
-			case COMMANDS.PLAY:
-				convertView.setOnClickListener(onPlayClick);
+			case COMMANDS.IMAGE:
 				holder.text.setVisibility(View.GONE);
 				holder.image.setVisibility(View.VISIBLE);
+				holder.image.setOnClickListener(onImageClick);
+				holder.image.setImageResource(android.R.drawable.ic_menu_gallery);
+				break;
+			case COMMANDS.VIDEO:
+				holder.text.setVisibility(View.GONE);
+				holder.image.setVisibility(View.VISIBLE);
+				holder.image.setOnClickListener(onPlayClick);
 				holder.image.setImageResource(android.R.drawable.ic_media_play);
+				break;
+			case COMMANDS.EDIT:
+				holder.text.setVisibility(View.GONE);
+				holder.image.setVisibility(View.VISIBLE);
+				holder.image.setOnClickListener(onEditClick);
+				holder.image.setImageResource(android.R.drawable.ic_menu_edit);
 				break;
 		}
 
@@ -63,11 +77,27 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 		}
 	};
 
+	private OnClickListener onImageClick = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			bf.onImageClick(bv);
+		}
+	};
+
 	private OnClickListener onPlayClick = new OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
 			bf.onPlayClick(bv);
+		}
+	};
+
+	private OnClickListener onEditClick = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			bf.onEditClick(bv);
 		}
 	};
 

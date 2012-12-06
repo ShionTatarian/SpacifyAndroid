@@ -30,14 +30,14 @@ public class BubbleControlFragment extends BaseFragment {
 	public void setSize(int size) {
 		layout.removeAllViews();
 
-		int controlBubbleSize = (int) getResources().getDimension(R.dimen.popup_control);
-		int c = (int) (Math.PI * size);
-		int count = c / (controlBubbleSize * 3 / 2);
-		int angle = 360 / count;
+		double controlBubbleSize = (int) getResources().getDimension(R.dimen.popup_control);
+		double c = (int) (Math.PI * size);
+		double count = c / (controlBubbleSize * 3 / 2);
+		double angle = 360d / count;
 
 		for(int i = 0; i < adapter.getCount(); i++) {
 			View v = adapter.getView(i, null, layout);
-			v.setRotation((i * angle));
+			v.setRotation((int) (i * angle));
 			layout.addView(v);
 			views.add(v);
 		}

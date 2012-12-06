@@ -9,6 +9,8 @@ public class ThirdLayer extends BaseBubbleView {
 		super(context);
 
 		bubble = findViewById(R.id.third_layer_image);
+		zoom(2);
+		diameter = 300;
 	}
 
 	@Override
@@ -26,7 +28,6 @@ public class ThirdLayer extends BaseBubbleView {
 		params.leftMargin = this.x;
 		params.topMargin = this.y;
 		setLayoutParams(params);
-
 	}
 
 }

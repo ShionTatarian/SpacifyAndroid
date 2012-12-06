@@ -1,10 +1,8 @@
 package fi.android.spacify.fragment;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -51,6 +49,9 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 		if(activity instanceof BubbleActivity) {
 			bubbleActivity = (BubbleActivity) activity;
 		}
+		if(size == -1) {
+			size = (int) getResources().getDimension(R.dimen.context_round_list);
+		}
 	}
 
 	@Override
@@ -62,25 +63,7 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 		count = c / (controlBubbleSize * 3 / 2);
 		angle = 360 / count;
 
-		try {
-			bubbleLinks = new JSONArray(settings.loadString(BUBBLE_LIST_KEY, "[]"));
-		} catch(JSONException e) {
-			e.printStackTrace();
-		}
 		adapter = new RoundListAdapter(getActivity(), new ArrayList<BubbleView>());
-		List<Integer> idList = new ArrayList<Integer>();
-		for(int i = 0; i < bubbleLinks.length(); i++) {
-			try {
-				int id = bubbleLinks.getInt(i);
-				idList.add(id);
-			} catch(JSONException e) {
-				e.printStackTrace();
-			}
-		}
-
-		if(idList.size() > 0) {
-			adapter.addAll(cms.getBubbles(idList));
-		}
 
 		int midStart = adapter.getMiddle();
 		lastPosition = midStart;
@@ -90,13 +73,12 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 			ViewHolder h;
 			if(adapter.getRealCount() > j) {
 				v = adapter.getView(position, null, layout);
-				v.setRotation((position * angle));
 				lastPosition += 1;
 			} else {
 				v = adapter.getEmptyView(layout);
-				v.setRotation((position * angle));
 //				empty.setVisibility(View.GONE);
 			}
+			v.setRotation((position * angle));
 			h = (ViewHolder) v.getTag();
 			h.text.setOnTouchListener(this);
 			layout.addView(v);
@@ -308,10 +290,16 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 		return retValue;
 	}
 
+	private int size = -1;
+
+	public void setWheelSize(int size) {
+		this.size = size;
+	}
+
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		View v = super.onCreateView(inflater, container, savedInstanceState);
-		setSize((int) getResources().getDimension(R.dimen.context_round_list));
+		setSize(size);
 
 		return v;
 	}
