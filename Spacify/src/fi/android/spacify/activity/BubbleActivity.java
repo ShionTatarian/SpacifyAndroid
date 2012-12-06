@@ -482,6 +482,8 @@ public class BubbleActivity extends BaseActivity {
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
 		anim.setInterpolator(new AccelerateInterpolator());
 
+		meContextAdapter.setSelected(bv);
+		meContextFragment.redraw();
 		setTierZero(bv, anim);
 	}
 

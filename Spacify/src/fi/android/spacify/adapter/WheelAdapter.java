@@ -15,6 +15,7 @@ public abstract class WheelAdapter extends ArrayAdapter<BubbleView> {
 
 	private int size;
 	protected BubbleActivity bubbleAct;
+	private BubbleView selected;
 
 	public WheelAdapter(BubbleActivity context) {
 		super(context, 0);
@@ -31,8 +32,15 @@ public abstract class WheelAdapter extends ArrayAdapter<BubbleView> {
 		holder.position = position;
 		BubbleView bv = getItem(position);
 		if(bv != null) {
+			if(selected != null && bv.getID() == selected.getID()) {
+				holder.background.setBackgroundResource(R.drawable.greenball);
+			} else {
+				holder.background.setBackgroundResource(R.drawable.lightblueball);
+			}
+
 			holder.text.setText(bv.getTitle());
 		}
+
 
 		return convertView;
 	}
@@ -71,6 +79,10 @@ public abstract class WheelAdapter extends ArrayAdapter<BubbleView> {
 
 	public int getBubbleSize() {
 		return size;
+	}
+
+	public void setSelected(BubbleView bv) {
+		selected = bv;
 	}
 
 	public abstract void onSingleClick(View from, BubbleView bv);

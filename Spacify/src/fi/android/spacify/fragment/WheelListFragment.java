@@ -237,4 +237,11 @@ public class WheelListFragment extends BaseFragment implements OnTouchListener {
 		return behindZero;
 	}
 
+	public void redraw() {
+		for(View v : views) {
+			ViewHolder h = (ViewHolder) v.getTag();
+			v = adapter.getView(h.position, v, layout);
+		}
+	}
+
 }
