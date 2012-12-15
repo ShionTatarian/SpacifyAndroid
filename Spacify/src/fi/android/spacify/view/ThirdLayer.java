@@ -19,7 +19,7 @@ public class ThirdLayer extends BaseBubbleView {
 	}
 
 	@Override
-	public void move(int x, int y) {
+	public void move(int x, int y, int maxX, int maxY) {
 		int radius = getRadius();
 		this.x = (x + offsetX - radius);
 		this.y = (y + offsetY - radius);

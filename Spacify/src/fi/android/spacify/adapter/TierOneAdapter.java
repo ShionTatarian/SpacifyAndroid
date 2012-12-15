@@ -12,7 +12,7 @@ public class TierOneAdapter extends WheelAdapter {
 
 	@Override
 	public void onSingleClick(View from, BubbleView bv) {
-		bubbleAct.setTierTwo(bv);
+		bubbleAct.onTierOneClick(from, bv);
 	}
 
 }

@@ -13,8 +13,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
-import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -25,7 +23,6 @@ import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.ScaleAnimation;
-import android.widget.FrameLayout.LayoutParams;
 import fi.android.spacify.R;
 import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.activity.VideoActivity;
@@ -35,10 +32,9 @@ import fi.android.spacify.view.BaseBubbleView;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.ConnectionLayout;
 import fi.android.spacify.view.ThirdLayer;
-import fi.spacify.android.util.Events;
 import fi.spacify.android.util.StaticUtils;
 
-public class BubbleFragment extends BaseFragment implements OnTouchListener {
+public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListener {
 
 	private final String TAG = "BubbleFragment";
 
@@ -52,14 +48,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	private Handler handler;
 	private boolean animationInProgress = false;
 
-	private View popup;
-	private BubbleControlFragment controls;
-	private Animation closePopupAnimation;
-	private BubbleView openPopupView;
-
 	private BubbleActivity parentActivity;
 	
-	private ThirdLayer thirdLayer = null;
+	private List<ThirdLayer> thirdLayer = new ArrayList<ThirdLayer>();
 
 	@Override
 	public void onAttach(Activity activity) {
@@ -74,85 +65,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		frame = (ConnectionLayout) inflater.inflate(R.layout.bubble_frame, container, false);
 		frame.setOnTouchListener(this);
 
-		popup = frame.findViewById(R.id.bubble_popup);
-		popup.setVisibility(View.GONE);
-		if(controls == null) {
-			controls = new BubbleControlFragment();
-			controls.setBubbleFrame(this);
-			FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
-			ft.replace(R.id.bubble_popup, controls);
-			ft.commit();
-		}
-
-		updateBubbles();
-		updateConnections();
-
-		handler.postDelayed(updateConnections, UPDATE_DELAY);
-
 		return frame;
 	}
 
-	private Runnable updateConnections = new Runnable() {
-
-		@Override
-		public void run() {
-			updateConnections();
-
-			handler.postDelayed(updateConnections, UPDATE_DELAY);
-		}
-	};
-
-	private void updateBubbles() {
-		handler.post(updateBubbles);
-	}
-
-	private boolean updateSize() {
-		width = frame.getWidth();
-		height = frame.getHeight();
-
-		return width > 0 && height > 0;
-	}
-
-	private Runnable updateBubbles = new Runnable() {
-
-		@Override
-		public void run() {
-			if(updateSize()) {
-				Random r = new Random();
-				for(BubbleView b : list.values()) {
-					b.setOnTouchListener(BubbleFragment.this);
-					if(b.x <= 0 && b.y <= 0) {
-						int radius = b.getRadius();
-						int xn = width / radius;
-						int yn = height / radius;
-						int x = radius * r.nextInt(xn);
-						int y = radius * r.nextInt(yn - 1);
-
-						b.move(x, y, width, height);
-					}
-
-					frame.addView(b);
-				}
-
-				frame.invalidate();
-			} else {
-				handler.postDelayed(updateBubbles, 200);
-			}
-		}
-	};
-
-	@Override
-	public boolean handleMessage(Message msg) {
-
-		switch (Events.values()[msg.what]) {
-			case ALL_BUBBLES_FETCHED:
-				return true;
-			default:
-				break;
-		}
-
-		return super.handleMessage(msg);
-	}
 
 	private BaseBubbleView firstTouched = null;
 	private double initialD = -1;
@@ -170,6 +85,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			if(event.getPointerCount() == 1) {
 				firstTouched = bv;
 			}
+		} else {
+			onEmptyClick();
+			return false;
 		}
 		
 		int action = (event.getAction() & MotionEvent.ACTION_MASK);
@@ -192,53 +110,31 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				}
 				break;
 			case MotionEvent.ACTION_MOVE:
-//				if(bv != null) {
-//					bv.move((int) x, (int) y);
-//					if(bv instanceof BubbleView) {
-//						testHit((BubbleView) bv);
-//					}
-//
-//					if(openPopupView == bv) {
-//						LayoutParams params = (LayoutParams) popup.getLayoutParams();
-//						params.leftMargin = bv.getLeft() + (bv.getWidth() / 2) - (popup.getWidth() /2);
-//						params.topMargin = bv.getTop() + (bv.getHeight() / 2)- (popup.getHeight() /2);
-//						popup.setLayoutParams(params);
-//					}
-//
-//				}
-//
-//				if(firstTouched != null && event.getPointerCount() == 2) {
-//					float x1 = event.getX(event.getPointerId(0));
-//					float y1 = event.getY(event.getPointerId(0));
-//					float x2 = event.getX(event.getPointerId(1));
-//					float y2 = event.getY(event.getPointerId(1));
-//
-//					double d = distance(x1, y1, x2, y2);
-//					if(initialD < 0) {
-//						initialD = d;
-//					} else {
-//						firstTouched.zoom(d / initialD);
-//						if(closePopupAnimation != null && openPopupView == bv) {
-//							int size = (bv.getWidth() * 2);
-//							controls.setSize(size);
-//							final LayoutParams params = (LayoutParams) popup.getLayoutParams();
-//							params.width = size;
-//							params.height = size;
-//							params.leftMargin = bv.getLeft() + (bv.getWidth() / 2)
-//									- (popup.getWidth() / 2);
-//							params.topMargin = bv.getTop() + (bv.getHeight() / 2)
-//									- (popup.getHeight() / 2);
-//							popup.setLayoutParams(params);
-//						}
-//					}
-//				}
+				if(bv != null) {
+					bv.move((int) x, (int) y, width, height);
+					if(bv instanceof BubbleView) {
+						testHit((BubbleView) bv);
+					}
+
+				}
+
+				if(firstTouched != null && event.getPointerCount() == 2) {
+					float x1 = event.getX(event.getPointerId(0));
+					float y1 = event.getY(event.getPointerId(0));
+					float x2 = event.getX(event.getPointerId(1));
+					float y2 = event.getY(event.getPointerId(1));
+
+					double d = distance(x1, y1, x2, y2);
+					if(initialD < 0) {
+						initialD = d;
+					} else {
+						firstTouched.zoom(d / initialD);
+					}
+				}
 
 				break;
 			case MotionEvent.ACTION_UP:
 			case MotionEvent.ACTION_POINTER_UP:
-				if(closePopupAnimation != null && bv == null) {
-					closePopup();
-				}
 
 				if(firstTouched != null) {
 					firstTouched.endZoom();
@@ -270,79 +166,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	public void onSingleTouch(BubbleView bv) {
 		if(bv != null && list.containsKey(bv.getID()) && !bv.asMainContext) {
-			openControlPopup(bv);
 			return;
 		}
-	}
-
-	public void closePopup() {
-		if(closePopupAnimation != null) {
-			popup.setVisibility(View.GONE);
-			popup.startAnimation(closePopupAnimation);
-			closePopupAnimation = null;
-			openPopupView = null;
-		}
-	}
-
-	private void openControlPopup(final BubbleView bv) {
-		if(openPopupView == bv && closePopupAnimation != null) {
-			closePopup();
-			return;
-		}
-		controls.setAdapter(bv.getControlAdapter(this));
-
-		popup.setVisibility(View.VISIBLE);
-		controls.openMenu(bv);
-		popup.bringToFront();
-		bv.bringToFront();
-		int size = (bv.getWidth() * 2);
-		controls.setSize(size);
-		final LayoutParams params = (LayoutParams) popup.getLayoutParams();
-		params.width = size;
-		params.height = size;
-		params.leftMargin = (bv.getLeft() + (bv.getWidth() / 2) - (size / 2));
-		params.topMargin = (bv.getTop() + (bv.getHeight() / 2) - (size / 2));
-		popup.setLayoutParams(params);
-		final Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE, (bv.x
-				- params.leftMargin + (bv.getWidth() / 2)), Animation.ABSOLUTE, (bv.y
-				- params.topMargin + (bv.getWidth() / 2)));
-		anim.setDuration(StaticUtils.ANIMATION_DURATION);
-		anim.setInterpolator(new LinearInterpolator());
-		
-		if(closePopupAnimation != null) {
-			popup.setVisibility(View.GONE);
-			closePopupAnimation.setAnimationListener(new AnimationListener() {
-
-				@Override
-				public void onAnimationStart(Animation animation) {
-				}
-
-				@Override
-				public void onAnimationRepeat(Animation animation) {
-				}
-
-				@Override
-				public void onAnimationEnd(Animation animation) {
-					popup.setLayoutParams(params);
-					openPopupView = bv;
-					popup.setVisibility(View.VISIBLE);
-					popup.startAnimation(anim);
-				}
-			});
-			popup.startAnimation(closePopupAnimation);
-			closePopupAnimation = null;
-			openPopupView = null;
-		} else {
-
-			openPopupView = bv;
-			popup.startAnimation(anim);
-		}
-
-		closePopupAnimation = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE, (bv.x
-				- params.leftMargin + (bv.getWidth() / 2)), Animation.ABSOLUTE, (bv.y
-				- params.topMargin + (bv.getWidth() / 2)));
-		closePopupAnimation.setDuration(StaticUtils.ANIMATION_DURATION);
-		closePopupAnimation.setInterpolator(new ReverseInterpolator());
 	}
 
 	public void onBubbleViewClick(BubbleView bv) {
@@ -442,7 +267,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				@Override
 				public void onAnimationEnd(Animation animation) {
 					list.put(bv.getID(), bv);
-					bv.setOnTouchListener(BubbleFragment.this);
+					bv.setOnTouchListener(ThirdLayerBaseFragment.this);
 					updateConnections();
 					animationInProgress = false;
 					checkChildCount();
@@ -463,7 +288,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		}
 
 		frame.addView(bv);
-		bv.setOnTouchListener(BubbleFragment.this);
+		bv.setOnTouchListener(ThirdLayerBaseFragment.this);
 		list.put(bv.getID(), bv);
 		updateConnections();
 
@@ -616,9 +441,11 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	private void onEmptyClick() {
-		if(thirdLayer != null) {
-			frame.removeView(thirdLayer);
-			thirdLayer = null;
+		Iterator<ThirdLayer> iterator = thirdLayer.iterator();
+		while(iterator.hasNext()) {
+			ThirdLayer third = iterator.next();
+			frame.removeView(third);
+			iterator.remove();
 		}
 		((BubbleActivity) getActivity()).onEmptyClick();
 	}
@@ -632,12 +459,30 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	public void onImageClick(BubbleView bv) {
-		thirdLayer = new ThirdLayer(parentActivity);
-		thirdLayer.setOnTouchListener(this);
-		frame.addView(thirdLayer);
-		thirdLayer.onTouchDown();
-		thirdLayer.move(bv.x, bv.y, width, height);
-		thirdLayer.onTouchUp();
+		ThirdLayer third = new ThirdLayer(parentActivity);
+		third.setOnTouchListener(this);
+		frame.addView(third);
+		third.onTouchDown();
+
+		Random r = new Random();
+		int x = r.nextInt(BubbleActivity.width);
+		int y = r.nextInt(BubbleActivity.height);
+		if(x < 300) {
+			x = 300;
+		} else if(x > BubbleActivity.width - 300) {
+			x = BubbleActivity.width - 300;
+		}
+
+		if(y < 300) {
+			y = 300;
+		} else if(y > BubbleActivity.height - 300) {
+			y = BubbleActivity.height - 300;
+		}
+
+		third.move(x, y, width, height);
+		third.onTouchUp();
+
+		thirdLayer.add(third);
 	}
 
 	public void onPlayClick(BubbleView bv) {

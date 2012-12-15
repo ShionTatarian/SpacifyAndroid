@@ -1,5 +1,7 @@
 package fi.android.spacify.activity;
 
+import java.util.Random;
+
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.Context;
@@ -35,6 +37,7 @@ import fi.android.spacify.adapter.TierOneAdapter;
 import fi.android.spacify.adapter.WheelAdapter;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.fragment.BubbleFragment;
+import fi.android.spacify.fragment.ThirdLayerBaseFragment;
 import fi.android.spacify.fragment.TierZeroFragment;
 import fi.android.spacify.fragment.WheelListFragment;
 import fi.android.spacify.service.ContentManagementService;
@@ -70,9 +73,13 @@ public class BubbleActivity extends BaseActivity {
 	private boolean tierOneOpen = false;
 	private boolean tierTwoOpen = false;
 
-	private View t0, t1, t2, meContextView;
+	private WheelAdapter tierOneAdapter;
+
+	private View t0, t1, t2, t3, meContextView;
 
 	private TierZeroFragment tierZero;
+
+	private ThirdLayerBaseFragment thirdLayer;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +95,7 @@ public class BubbleActivity extends BaseActivity {
 		t0 = findViewById(R.id.tier_zero);
 		t1 = findViewById(R.id.tier_one);
 		t2 = findViewById(R.id.tier_two);
+		t3 = findViewById(R.id.third_layer);
 		meContextView = findViewById(R.id.round_context_list);
 
 		meContextAdapter = new MeContextAdapter(this);
@@ -98,6 +106,9 @@ public class BubbleActivity extends BaseActivity {
 		meContextFragment.setTierSize((int) getResources().getDimension(R.dimen.context_round_list));
 		meContextFragment.setAdapter(meContextAdapter);
 		changeFragment(R.id.round_context_list, meContextFragment);
+
+		thirdLayer = new ThirdLayerBaseFragment();
+		changeFragment(R.id.third_layer, thirdLayer);
 
 		contextAdapter = new ContextAdapter(this);
 		contextList = (ListView) findViewById(R.id.context_list);
@@ -167,14 +178,20 @@ public class BubbleActivity extends BaseActivity {
 	};
 
 	public void onMeClick(final View view) {
+		contextAdapter.clear();
+		meContextAdapter.setSelected(null);
+		meContextFragment.redraw();
 		if(tierZero != null) {
 			removeFragment(tierZero);
+			tierZero = null;
 		}
 		if(tierOne != null) {
 			removeFragment(tierOne);
+			tierOne = null;
 		}
 		if(tierTwo != null) {
 			removeFragment(tierTwo);
+			tierTwo = null;
 		}
 
 		// activeBubbleFragment.saveBubbles();
@@ -323,12 +340,12 @@ public class BubbleActivity extends BaseActivity {
 		activeBubbleFragment = new BubbleFragment();
 		activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(bv.getLinks()),
 				BubbleActivity.this);
-		animateSideContextChange(bv);
+		animateSideContextChange(bv, null);
 	}
 
-	private void animateSideContextChange(final BubbleView bv) {
-		BubbleView previousCotext = contextAdapter.getSelected();
-		Animation anim = getCloseAnimation(previousCotext);
+	private void animateSideContextChange(final BubbleView bv, final BubbleView newZero) {
+		contextAdapter.add(bv);
+		Animation anim = getCloseAnimation(bv);
 		if(anim != null) {
 			anim.setAnimationListener(new AnimationListener() {
 
@@ -342,11 +359,15 @@ public class BubbleActivity extends BaseActivity {
 
 				@Override
 				public void onAnimationEnd(Animation animation) {
-					changeFragment(R.id.bubble_root, activeBubbleFragment);
-					openBubbleSideAnimation(bv);
+					contextAdapter.notifyDataSetChanged();
+					if(newZero != null) {
+						tierZero = new TierZeroFragment();
+						tierZero.setBubbleView(newZero);
+						changeFragment(R.id.tier_zero, tierZero);
+					}
 				}
 			});
-			root.startAnimation(anim);
+			t0.startAnimation(anim);
 			return;
 		}
 	}
@@ -379,7 +400,6 @@ public class BubbleActivity extends BaseActivity {
 		float toY = 1f;
 
 		if(wantedView != null) {
-			float left = wantedView.getLeft();
 			float top = wantedView.getTop();
 			toY = ((top + (wantedView.getHeight() / 2) + seachButton.getHeight()) / (height));
 		}
@@ -387,8 +407,6 @@ public class BubbleActivity extends BaseActivity {
 
 		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, toX,
 				Animation.RELATIVE_TO_SELF, toY);
-		anim.setFillBefore(true);
-		anim.setFillAfter(true);
 		anim.setInterpolator(new ReverseInterpolator());
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
 		return anim;
@@ -456,23 +474,34 @@ public class BubbleActivity extends BaseActivity {
 	public void setTierZero(BubbleView bv, Animation anim) {
 		if(tierOne != null) {
 			removeFragment(tierOne);
+			tierOne = null;
 		}
 		if(tierTwo != null) {
 			removeFragment(tierTwo);
+			tierTwo = null;
 		}
 
 		t0.startAnimation(anim);
 
-		tierZero = new TierZeroFragment();
-		tierZero.setBubbleView(bv);
-		changeFragment(R.id.tier_zero, tierZero);
+		if(tierZero != null) {
+			animateSideContextChange(tierZero.getBubbleView(), bv);
+		} else {
+			tierZero = new TierZeroFragment();
+			tierZero.setBubbleView(bv);
+			changeFragment(R.id.tier_zero, tierZero);
+		}
+
+		contextAdapter.setSelected(bv);
 	}
 
 	public void setTierZeroFromMeContext(View from, BubbleView bv) {
+		tierOne = null;
+		setTierOne(bv);
+
 		from = (View) from.getParent();
 
 		float rotation = (from.getRotation() / 90);
-		float size = meContextView.getWidth();
+		float size = from.getHeight();
 		float pivotX = (rotation * (size / 2)) / width;
 		float pivotY = 1f - (((1f - rotation) * (size / 2)) / height);
 
@@ -484,16 +513,22 @@ public class BubbleActivity extends BaseActivity {
 
 		meContextAdapter.setSelected(bv);
 		meContextFragment.redraw();
+		tierZero = null;
 		setTierZero(bv, anim);
 	}
 
 	public void setTierOne(BubbleView bv) {
+		if(tierOne != null) {
+			openTierZeroContent();
+			return;
+		}
+		
 		Animation anim = new ScaleAnimation(3, 1, 3, 1);
 		anim.setInterpolator(new LinearInterpolator());
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
 		t1.startAnimation(anim);
 
-		WheelAdapter tierOneAdapter = new TierOneAdapter(this);
+		tierOneAdapter = new TierOneAdapter(this);
 		tierOneAdapter.setBubbleSize((int) getResources().getDimension(R.dimen.tier_one_bubble));
 		tierOneAdapter.addAll(cms.getBubbles(bv.getLinks()));
 		tierOne = new WheelListFragment();
@@ -502,19 +537,52 @@ public class BubbleActivity extends BaseActivity {
 		changeFragment(R.id.tier_one, tierOne);
 	}
 
-	public void setTierTwo(BubbleView bv) {
-		Animation anim = new ScaleAnimation(3, 1, 3, 1);
-		anim.setInterpolator(new LinearInterpolator());
+	private void openTierZeroContent() {
+		Random r = new Random();
+		int count = 1 + r.nextInt(5);
+		for(int i = 0; i < count; i++) {
+			thirdLayer.onImageClick(tierZero.getBubbleView());
+		}
+		
+		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_PARENT, 0.5f,
+				Animation.RELATIVE_TO_PARENT, 0.75f);
+		anim.setInterpolator(new AccelerateInterpolator());
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
-		t2.startAnimation(anim);
 
-		WheelAdapter tierTwoAdapter = new TierOneAdapter(this);
-		tierTwoAdapter.setBubbleSize((int) getResources().getDimension(R.dimen.tier_two_bubble));
-		tierTwoAdapter.addAll(cms.getBubbles(bv.getLinks()));
-		tierTwo = new WheelListFragment();
-		tierTwo.setAdapter(tierTwoAdapter);
-		tierTwo.setTierSize((int) getResources().getDimension(R.dimen.tier_two));
-		changeFragment(R.id.tier_two, tierTwo);
+		t3.startAnimation(anim);
+	}
+
+	public void onTierOneClick(View from, BubbleView bv) {
+		from = (View) from.getParent();
+
+		float pivotX = (0.5f);
+		float pivotY = (0.5f);
+
+		Animation anim = new ScaleAnimation(0, 1, 0, 1, 
+				Animation.RELATIVE_TO_SELF, pivotX,
+				Animation.RELATIVE_TO_SELF, pivotY);
+		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+		anim.setInterpolator(new AccelerateInterpolator());
+
+		setTierZero(bv, anim);
+		tierOne = null;
+		setTierOne(bv);
+
+//		tierOneAdapter.setSelected(bv);
+//		tierOne.redraw();
+//
+//		Animation anim = new ScaleAnimation(3, 1, 3, 1);
+//		anim.setInterpolator(new LinearInterpolator());
+//		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+//		t2.startAnimation(anim);
+//
+//		WheelAdapter tierTwoAdapter = new TierOneAdapter(this);
+//		tierTwoAdapter.setBubbleSize((int) getResources().getDimension(R.dimen.tier_two_bubble));
+//		tierTwoAdapter.addAll(cms.getBubbles(bv.getLinks()));
+//		tierTwo = new WheelListFragment();
+//		tierTwo.setAdapter(tierTwoAdapter);
+//		tierTwo.setTierSize((int) getResources().getDimension(R.dimen.tier_two));
+//		changeFragment(R.id.tier_two, tierTwo);
 	}
 
 }

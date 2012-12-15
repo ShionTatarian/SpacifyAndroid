@@ -8,7 +8,6 @@ import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import fi.android.spacify.R;
-import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.fragment.BubbleFragment;
 import fi.android.spacify.view.BubbleView.BubbleMovement;
 
@@ -116,20 +115,20 @@ public abstract class BaseBubbleView extends FrameLayout {
 		}
 	}
 
-	public void move(int x, int y) {
+	public void move(int x, int y, int maxX, int maxY) {
 		int radius = getRadius();
 		this.x = (x + offsetX - radius);
 		this.y = (y + offsetY - radius);
 
 		if(this.x < 0) {
 			this.x = 0;
-		} else if((this.x + (radius * 2)) > BubbleActivity.width) {
-			this.x = BubbleActivity.width - radius * 2;
+		} else if((this.x + (radius * 2)) > maxX) {
+			this.x = maxX - radius * 2;
 		}
 		if(this.y < 0) {
 			this.y = 0;
-		} else if((this.y + (radius * 2)) > BubbleActivity.height) {
-			this.y = BubbleActivity.height - radius * 2;
+		} else if((this.y + (radius * 2)) > maxY) {
+			this.y = maxY - radius * 2;
 		}
 
 		LayoutParams params = (LayoutParams) getLayoutParams();

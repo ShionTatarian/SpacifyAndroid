@@ -115,11 +115,6 @@ public class BubbleView extends BaseBubbleView {
 		x = c.getInt(c.getColumnIndex(BubbleColumns.X));
 		y = c.getInt(c.getColumnIndex(BubbleColumns.Y));
 
-		if(x != -1 && y != -1) {
-			move(x, y);
-			moved = 0;
-		}
-
 		postInvalidate();
 	}
 

@@ -62,4 +62,8 @@ public class TierZeroFragment extends BaseFragment {
 		text.setText(bv.getTitle());
 	}
 
+	public BubbleView getBubbleView() {
+		return bv;
+	}
+
 }
