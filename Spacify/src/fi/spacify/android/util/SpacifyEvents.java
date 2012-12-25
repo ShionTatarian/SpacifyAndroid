@@ -1,6 +1,6 @@
 package fi.spacify.android.util;
 
-public enum Events {
+public enum SpacifyEvents {
 	/**
 	 * Event for successfully fetching all bubbles.
 	 */

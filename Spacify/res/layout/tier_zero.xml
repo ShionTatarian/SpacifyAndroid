@@ -7,20 +7,13 @@
         android:layout_width="150dp"
         android:layout_height="150dp"
         android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="50dp" >
-
-        <ImageView
-            android:id="@+id/zero_background"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitXY"
-            android:src="@drawable/greenball" />
+        android:layout_marginBottom="150dp" >
 
         <TextView
             android:id="@+id/zero_text"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@drawable/greenball"
+            android:background="@drawable/lightblueball"
             android:gravity="center"
             android:padding="20dp"
             android:textSize="@dimen/text_huge" />

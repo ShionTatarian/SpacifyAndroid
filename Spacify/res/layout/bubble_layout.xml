@@ -60,18 +60,6 @@
             android:spacing="@dimen/margin_normal" />
     </LinearLayout>
 
-    <ListView
-        android:id="@+id/context_list"
-        android:layout_width="@dimen/context_me_side"
-        android:layout_height="match_parent"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/search_layout"
-        android:cacheColorHint="@android:color/transparent"
-        android:divider="@android:color/transparent"
-        android:listSelector="@android:color/transparent"
-        android:stackFromBottom="true" >
-    </ListView>
-
     <FrameLayout
         android:id="@+id/tier_zero"
         android:layout_width="match_parent"
@@ -104,6 +92,12 @@
 
     <FrameLayout
         android:id="@+id/third_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/history_layer"
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
     </FrameLayout>

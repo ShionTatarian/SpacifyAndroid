@@ -55,7 +55,6 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 			case COMMANDS.VIDEO:
 				holder.text.setVisibility(View.GONE);
 				holder.image.setVisibility(View.VISIBLE);
-				holder.image.setOnClickListener(onPlayClick);
 				holder.image.setImageResource(android.R.drawable.ic_media_play);
 				break;
 			case COMMANDS.EDIT:
@@ -82,14 +81,6 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 		@Override
 		public void onClick(View v) {
 			bf.onImageClick(bv);
-		}
-	};
-
-	private OnClickListener onPlayClick = new OnClickListener() {
-
-		@Override
-		public void onClick(View v) {
-			bf.onPlayClick(bv);
 		}
 	};
 

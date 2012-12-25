@@ -18,7 +18,7 @@ public abstract class BaseBubbleView extends FrameLayout {
 
 	private final int DOUBLE_CLICK_DELAY = 300;
 	
-	protected int id;
+	protected String id;
 	
 	public View bubble;
 	public TextView links;
@@ -171,7 +171,7 @@ public abstract class BaseBubbleView extends FrameLayout {
 	 * 
 	 * @return ID as integer
 	 */
-	public int getID() {
+	public String getID() {
 		return id;
 	}
 

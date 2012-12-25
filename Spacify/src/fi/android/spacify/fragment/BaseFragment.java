@@ -7,7 +7,7 @@ import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import fi.android.service.EventService;
-import fi.spacify.android.util.Events;
+import fi.spacify.android.util.SpacifyEvents;
 
 public class BaseFragment extends Fragment implements Callback {
 
@@ -34,7 +34,7 @@ public class BaseFragment extends Fragment implements Callback {
 
 	@Override
 	public boolean handleMessage(Message msg) {
-		Log.v(TAG, "" + Events.values()[msg.what]);
+		Log.v(TAG, "" + SpacifyEvents.values()[msg.what]);
 		return false;
 	}
 

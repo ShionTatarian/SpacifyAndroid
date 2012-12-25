@@ -18,7 +18,7 @@ import fi.android.service.web.WebServiceException;
 import fi.android.spacify.R;
 import fi.android.spacify.db.BubbleDatabase;
 import fi.android.spacify.view.BubbleView;
-import fi.spacify.android.util.Events;
+import fi.spacify.android.util.SpacifyEvents;
 import fi.spacify.android.util.WebPipes;
 
 
@@ -42,7 +42,7 @@ public class ContentManagementService extends BaseService {
 		this.context = context;
 
 		// if(getBubblesWithPriority(0).getCount() == 0) {
-			getBubblesFromAssets();
+		// getBubblesFromAssets();
 		// }
 	}
 
@@ -83,7 +83,7 @@ public class ContentManagementService extends BaseService {
 		public void successResult(JSONObject json) {
 			Log.v(TAG, "Got bubbles: " + json);
 			db.storeBubbleJson(json);
-			es.dispatchEvent(Events.ALL_BUBBLES_FETCHED.ordinal());
+			es.dispatchEvent(SpacifyEvents.ALL_BUBBLES_FETCHED.ordinal());
 		}
 
 		@Override
@@ -115,6 +115,10 @@ public class ContentManagementService extends BaseService {
 		return db.getBubblesWithPriority(priority);
 	}
 
+	public Cursor getBubblesAlwaysOnScreen() {
+		return db.getBubblesAlwaysOnScreen();
+	}
+
 	public Cursor getBubblesInContext(String context) {
 		return db.getBubblesInContext(context);
 	}
@@ -131,7 +135,7 @@ public class ContentManagementService extends BaseService {
 		return list;
 	}
 
-	public List<BubbleView> getBubbles(List<Integer> links) {
+	public List<BubbleView> getBubbles(List<String> links) {
 		Cursor c = db.getLinkedBubblesCursor(links);
 		List<BubbleView> bubbles = new ArrayList<BubbleView>();
 		c.moveToFirst();
@@ -144,7 +148,7 @@ public class ContentManagementService extends BaseService {
 		return bubbles;
 	}
 
-	public Cursor getBubblesCursor(List<Integer> links) {
+	public Cursor getBubblesCursor(List<String> links) {
 		return db.getLinkedBubblesCursor(links);
 	}
 

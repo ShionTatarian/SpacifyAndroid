@@ -9,7 +9,6 @@ import java.util.Random;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
@@ -25,7 +24,6 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.ScaleAnimation;
 import fi.android.spacify.R;
 import fi.android.spacify.activity.BubbleActivity;
-import fi.android.spacify.activity.VideoActivity;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BaseBubbleView;
@@ -41,7 +39,7 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 	private final int UPDATE_DELAY = 300;
 
 	private final ContentManagementService cms = ContentManagementService.getInstance();
-	private Map<Integer, BubbleView> list = new HashMap<Integer, BubbleView>();
+	private Map<String, BubbleView> list = new HashMap<String, BubbleView>();
 	private ConnectionLayout frame;
 	public int height, width;
 	private BubbleView singleTouched;
@@ -172,7 +170,6 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 
 	public void onBubbleViewClick(BubbleView bv) {
 		if(!animationInProgress) {
-			parentActivity.addContext(bv);
 
 			// Random r = new Random();
 			// if(hasChildsVisible(bv)) {
@@ -298,8 +295,8 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 	private void checkChildCount() {
 		for(BubbleView bv : list.values()) {
 			int count = 0;
-			List<Integer> links = bv.getLinks();
-			for(int id : links) {
+			List<String> links = bv.getLinks();
+			for(String id : links) {
 				if(list.containsKey(id)) {
 					count += 1;
 				}
@@ -403,8 +400,8 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 	}
 	
 	public boolean hasChildsVisible(BubbleView bv) {
-		for(int id : bv.getLinks()) {
-			if(id != bv.getID()) {
+		for(String id : bv.getLinks()) {
+			if(!id.equals(bv.getID())) {
 				BubbleView child = list.get(id);
 				if(child == null) {
 					return false;
@@ -420,7 +417,7 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 		Iterator<BubbleView> iterator = list.values().iterator();
 		while(iterator.hasNext()) {
 			BubbleView b1 = iterator.next();
-			for(int id : b1.getLinks()) {
+			for(String id : b1.getLinks()) {
 				BubbleView b2 = list.get(id);
 				if(b2 != null && b1 != null && connections.length > i && !b1.asMainContext
 						&& !b2.asMainContext) {
@@ -447,7 +444,6 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 			frame.removeView(third);
 			iterator.remove();
 		}
-		((BubbleActivity) getActivity()).onEmptyClick();
 	}
 
 	public void saveBubbles() {
@@ -483,11 +479,6 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 		third.onTouchUp();
 
 		thirdLayer.add(third);
-	}
-
-	public void onPlayClick(BubbleView bv) {
-		Intent intent = new Intent(getActivity(), VideoActivity.class);
-		startActivity(intent);
 	}
 
 	public void onEditClick(BubbleView bv) {

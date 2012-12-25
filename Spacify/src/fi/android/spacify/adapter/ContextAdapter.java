@@ -14,12 +14,12 @@ import fi.android.spacify.view.BubbleView;
 
 public class ContextAdapter extends BaseAdapter {
 
-	private final int NOTHING_SELECTED = -1;
+	private final String NOTHING_SELECTED = "nothing_selected";
 
 	private Context context;
 	private List<BubbleView> list = new ArrayList<BubbleView>();
 
-	private int selected = NOTHING_SELECTED;
+	private String selected = NOTHING_SELECTED;
 
 	public ContextAdapter(Context context) {
 		super();
@@ -36,7 +36,7 @@ public class ContextAdapter extends BaseAdapter {
 		ViewHolder h = (ViewHolder) convertView.getTag();
 		BubbleView bv = getItem(position);
 
-		if(selected == bv.getID()) {
+		if(selected.equals(bv.getID())) {
 			h.text.setBackgroundResource(R.drawable.greenball);
 		} else {
 			h.text.setBackgroundResource(R.drawable.lightblueball);
@@ -69,7 +69,7 @@ public class ContextAdapter extends BaseAdapter {
 
 	@Override
 	public long getItemId(int position) {
-		return getItem(position).getID();
+		return getItem(position).getID().hashCode();
 	}
 
 	public void add(BubbleView bv) {

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/history_previous"
+        android:layout_width="@dimen/history_bubble"
+        android:layout_height="@dimen/history_bubble"
+        android:background="@drawable/lightblueball"
+        android:gravity="center"
+        android:padding="15dp"
+        android:textSize="@dimen/text_huge" />
+
+    <TextView
+        android:id="@+id/history_animating_view"
+        android:layout_width="@dimen/history_bubble"
+        android:layout_height="@dimen/history_bubble"
+        android:background="@drawable/lightblueball"
+        android:gravity="center"
+        android:padding="15dp"
+        android:textSize="@dimen/text_huge" />
+
+</FrameLayout>

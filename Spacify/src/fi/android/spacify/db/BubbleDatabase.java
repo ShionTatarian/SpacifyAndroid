@@ -12,8 +12,6 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
-import fi.android.spacify.model.Bubble;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.BubbleView.BubbleContexts;
 import fi.android.spacify.view.BubbleView.BubbleJSON;
@@ -47,6 +45,7 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		public static final String LONGITUDE = "longitude";
 		public static final String X = "position_x";
 		public static final String Y = "position_y";
+		public static final String ALWAYS_ON_SCREEN = "always_on_screen";
 
 		// Custom fields
 		public static final String CONTEXT = "context";
@@ -77,7 +76,7 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 	public void onCreate(SQLiteDatabase db) {
 		StringBuilder sql = new StringBuilder();
 		sql.append("CREATE TABLE ").append(BUBBLE_TABLE).append(" (");
-		sql.append(BubbleColumns.ID).append(" INTEGER PRIMARY KEY,");
+		sql.append(BubbleColumns.ID).append(" TEXT PRIMARY KEY,");
 		sql.append(BubbleColumns.TITLE).append(" TEXT,");
 		sql.append(BubbleColumns.STYLE).append(" TEXT,");
 		sql.append(BubbleColumns.CONTENTS).append(" TEXT,");
@@ -91,6 +90,7 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		sql.append(BubbleColumns.LONGITUDE).append(" INTEGER,");
 		sql.append(BubbleColumns.X).append(" INTEGER,");
 		sql.append(BubbleColumns.Y).append(" INTEGER,");
+		sql.append(BubbleColumns.ALWAYS_ON_SCREEN).append(" INTEGER,");
 		sql.append(BubbleColumns.CONTEXT).append(" TEXT");
 		sql.append(")");
 		
@@ -103,39 +103,6 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 
 	}
 	
-	public void storeBubble(Bubble bubble) {
-		SQLiteDatabase db = getWritableDatabase();
-
-		ContentValues values = new ContentValues();
-		values.put(BubbleColumns.ID, bubble.getID());
-		values.put(BubbleColumns.TITLE, bubble.getTitle());
-		values.put(BubbleColumns.STYLE, bubble.getStyle());
-		values.put(BubbleColumns.CONTENTS, bubble.getContents());
-		values.put(BubbleColumns.PRIORITY, bubble.getPriority());
-		values.put(BubbleColumns.TITLE_IMAGE_URL, bubble.getTitleImageUrl());
-		values.put(BubbleColumns.LINKS, bubble.getLinksJSONArray().toString());
-		values.put(BubbleColumns.TYPE, bubble.getType());
-		values.put(BubbleColumns.DEBUG_ID, bubble.getDebugID());
-		values.put(BubbleColumns.CONTENT_IMAGE_URL, bubble.getContentImageUrl());
-		values.put(BubbleColumns.LATITUDE, bubble.getLattitude());
-		values.put(BubbleColumns.LONGITUDE, bubble.getLongitude());
-		values.put(BubbleColumns.X, bubble.x);
-		values.put(BubbleColumns.Y, bubble.y);
-
-		long change = -1;
-
-		try {
-			change = db.insertOrThrow(BUBBLE_TABLE, null, values);
-		} catch(SQLException e) {
-			String where = BubbleColumns.ID + " = " + bubble.getID();
-			change = db.update(BUBBLE_TABLE, values, where, null);
-		}
-
-		if(change != -1) {
-			Log.v(TAG, "Bubble [" + bubble.getTitle() + "] stored to database.");
-		}
-	}
-
 	public void storeBubbleViews(List<BubbleView> bubbles) {
 		SQLiteDatabase db = getWritableDatabase();
 
@@ -158,6 +125,7 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 			int[] position = b.getViewPosition();
 			values.put(BubbleColumns.X, position[0]);
 			values.put(BubbleColumns.Y, position[1]);
+			values.put(BubbleColumns.ALWAYS_ON_SCREEN, b.isAlwaysVisible());
 			values.put(BubbleColumns.CONTEXT, b.getContextJSON());
 
 			long change = -1;
@@ -191,6 +159,14 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		return db.query(BUBBLE_TABLE, null, selection, null, null, null, BubbleColumns.TITLE);
 	}
 
+	public Cursor getBubblesAlwaysOnScreen() {
+		SQLiteDatabase db = getReadableDatabase();
+		String selection = "";
+		selection = BubbleColumns.ALWAYS_ON_SCREEN + " = 1";
+
+		return db.query(BUBBLE_TABLE, null, selection, null, null, null, BubbleColumns.TITLE);
+	}
+
 	public Cursor getBubblesInContext(String context) {
 		SQLiteDatabase db = getReadableDatabase();
 		String sql = "SELECT * FROM " + BUBBLE_TABLE + " WHERE " + BubbleColumns.CONTEXT
@@ -199,13 +175,13 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		return c;
 	}
 
-	public Cursor getLinkedBubblesCursor(List<Integer> links) {
+	public Cursor getLinkedBubblesCursor(List<String> links) {
 		SQLiteDatabase db = getReadableDatabase();
 		
 		String separator = "";
 		String linkString = "";
-		for(Integer i : links) {
-			linkString += separator + i;
+		for(String link : links) {
+			linkString += separator + "'" + link + "'";
 			separator = ", ";
 		}
 		
@@ -227,7 +203,7 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 				JSONObject b = jArray.getJSONObject(i);
 
 				ContentValues values = new ContentValues();
-				int id = StaticUtils.parseIntJSON(b, BubbleJSON.id, -1);
+				String id = StaticUtils.parseStringJSON(b, BubbleJSON.id, "-1");
 				values.put(BubbleColumns.ID, id);
 				values.put(BubbleColumns.TITLE, StaticUtils.parseStringJSON(b, BubbleJSON.title, ""));
 				values.put(BubbleColumns.STYLE, StaticUtils.parseStringJSON(b, BubbleJSON.style, ""));
@@ -251,13 +227,15 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 				values.put(BubbleColumns.CONTENT_IMAGE_URL, StaticUtils.parseStringJSON(b, BubbleJSON.contentsImageUrl, ""));
 				values.put(BubbleColumns.LATITUDE, 0);
 				values.put(BubbleColumns.LONGITUDE, 0);
+				values.put(BubbleColumns.ALWAYS_ON_SCREEN,
+						StaticUtils.parseBooleanJSON(b, BubbleJSON.alwaysOnScreen, false) ? 1 : 0);
 				values.put(BubbleColumns.X, -1);
 				values.put(BubbleColumns.Y, -1);
 
 				try {
 					db.insertOrThrow(BUBBLE_TABLE, null, values);
 				} catch(SQLException e) {
-					String where = BubbleColumns.ID + " = " + id;
+					String where = BubbleColumns.ID + " = '" + id + "'";
 					db.update(BUBBLE_TABLE, values, where, null);
 				}
 			}

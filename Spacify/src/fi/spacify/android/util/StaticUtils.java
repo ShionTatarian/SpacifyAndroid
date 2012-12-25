@@ -53,4 +53,18 @@ public class StaticUtils {
 		return value;
 	}
 
+	public static boolean parseBooleanJSON(JSONObject json, String key, boolean defValue) {
+		boolean value = defValue;
+
+		if(json.has(key)) {
+			try {
+				value = json.getBoolean(key);
+			} catch(JSONException e) {
+				Log.w(TAG, "Could not parse Integer value for key[" + key + "] from json: " + json);
+			}
+		}
+
+		return value;
+	}
+
 }

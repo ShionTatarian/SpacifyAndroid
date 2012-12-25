@@ -2,7 +2,7 @@
 <resources>
 
     <!-- <string name="url_cms_all_bubbles">http://ec2-46-137-45-200.eu-west-1.compute.amazonaws.com/json</string> -->
-    <string name="url_cms_all_bubbles">http://ec2-46-137-45-200.eu-west-1.compute.amazonaws.com/json</string>
+    <string name="url_cms_all_bubbles">http://ec2-46-137-45-200.eu-west-1.compute.amazonaws.com:3000/json</string>
     <string name="url_comic_rss">http://www.sarjis.info/feed/uusimmat/original/rss/</string>
 
 </resources>

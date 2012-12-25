@@ -131,7 +131,6 @@ public class RoundListFragment extends BubbleControlFragment implements OnTouchL
 	}
 
 	private void onBubbleClick(BubbleView bv) {
-		bubbleActivity.changeContext(bv);
 	}
 
 	private boolean openTop = false;

@@ -7,10 +7,10 @@ import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.os.Message;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,29 +20,27 @@ import android.view.animation.Animation.AnimationListener;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.ScaleAnimation;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FilterQueryProvider;
 import android.widget.Gallery;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.RelativeLayout.LayoutParams;
 import fi.android.spacify.R;
 import fi.android.spacify.adapter.BubbleCursorAdapter;
-import fi.android.spacify.adapter.ContextAdapter;
 import fi.android.spacify.adapter.MeContextAdapter;
 import fi.android.spacify.adapter.TierOneAdapter;
 import fi.android.spacify.adapter.WheelAdapter;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.fragment.BubbleFragment;
+import fi.android.spacify.fragment.HistoryLayerFragment;
 import fi.android.spacify.fragment.ThirdLayerBaseFragment;
 import fi.android.spacify.fragment.TierZeroFragment;
 import fi.android.spacify.fragment.WheelListFragment;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.BubbleView.BubbleContexts;
+import fi.spacify.android.util.SpacifyEvents;
 import fi.spacify.android.util.StaticUtils;
 
 public class BubbleActivity extends BaseActivity {
@@ -62,9 +60,6 @@ public class BubbleActivity extends BaseActivity {
 	private Animation closeFragmentAnimation;
 	private Button meBubble;
 
-	private ContextAdapter contextAdapter;
-	private ListView contextList;
-
 	private int contextLarge, contextSmall;
 
 	private WheelListFragment meContextFragment, tierOne, tierTwo;
@@ -80,17 +75,22 @@ public class BubbleActivity extends BaseActivity {
 	private TierZeroFragment tierZero;
 
 	private ThirdLayerBaseFragment thirdLayer;
+	private HistoryLayerFragment historyLayer;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.bubble_layout);
+		cms.fetchBubbles();
 		
 		DisplayMetrics metrics = new DisplayMetrics();
 		Display display = getWindowManager().getDefaultDisplay();
 		display.getMetrics(metrics);
 		height = metrics.heightPixels;
 		width = metrics.widthPixels;
+
+		historyLayer = new HistoryLayerFragment();
+		changeFragment(R.id.history_layer, historyLayer);
 
 		t0 = findViewById(R.id.tier_zero);
 		t1 = findViewById(R.id.tier_one);
@@ -99,8 +99,7 @@ public class BubbleActivity extends BaseActivity {
 		meContextView = findViewById(R.id.round_context_list);
 
 		meContextAdapter = new MeContextAdapter(this);
-		meContextAdapter.addAll(cms.getBubblesFromCursor(cms
-				.getBubblesInContext(BubbleContexts.PEOPLE)));
+		meContextAdapter.addAll(cms.getBubblesFromCursor(cms.getBubblesAlwaysOnScreen()));
 		meContextAdapter.setBubbleSize((int) getResources().getDimension(R.dimen.tier_two_bubble));
 		meContextFragment = new WheelListFragment();
 		meContextFragment.setTierSize((int) getResources().getDimension(R.dimen.context_round_list));
@@ -109,11 +108,6 @@ public class BubbleActivity extends BaseActivity {
 
 		thirdLayer = new ThirdLayerBaseFragment();
 		changeFragment(R.id.third_layer, thirdLayer);
-
-		contextAdapter = new ContextAdapter(this);
-		contextList = (ListView) findViewById(R.id.context_list);
-		contextList.setAdapter(contextAdapter);
-		contextList.setOnItemClickListener(onContextListClick);
 
 		contextLarge = (int) getResources().getDimension(R.dimen.context_me);
 		contextSmall = (int) getResources().getDimension(R.dimen.context_me_side);
@@ -178,7 +172,6 @@ public class BubbleActivity extends BaseActivity {
 	};
 
 	public void onMeClick(final View view) {
-		contextAdapter.clear();
 		meContextAdapter.setSelected(null);
 		meContextFragment.redraw();
 		if(tierZero != null) {
@@ -334,115 +327,6 @@ public class BubbleActivity extends BaseActivity {
 		super.onDestroy();
 	}
 
-	public void changeContext(BubbleView bv) {
-		activeBubbleFragment.saveBubbles();
-
-		activeBubbleFragment = new BubbleFragment();
-		activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(bv.getLinks()),
-				BubbleActivity.this);
-		animateSideContextChange(bv, null);
-	}
-
-	private void animateSideContextChange(final BubbleView bv, final BubbleView newZero) {
-		contextAdapter.add(bv);
-		Animation anim = getCloseAnimation(bv);
-		if(anim != null) {
-			anim.setAnimationListener(new AnimationListener() {
-
-				@Override
-				public void onAnimationStart(Animation animation) {
-				}
-
-				@Override
-				public void onAnimationRepeat(Animation animation) {
-				}
-
-				@Override
-				public void onAnimationEnd(Animation animation) {
-					contextAdapter.notifyDataSetChanged();
-					if(newZero != null) {
-						tierZero = new TierZeroFragment();
-						tierZero.setBubbleView(newZero);
-						changeFragment(R.id.tier_zero, tierZero);
-					}
-				}
-			});
-			t0.startAnimation(anim);
-			return;
-		}
-	}
-
-	private Animation getCloseAnimation(BubbleView bv) {
-		int wantedPosition = 0;
-		if(bv != null) {
-			wantedPosition = contextAdapter.getPosition(bv);
-		}
-		int firstPosition = contextList.getFirstVisiblePosition()
-				- contextList.getHeaderViewsCount(); // This is the same as
-														// child #0
-		int wantedChild = wantedPosition - firstPosition;
-		// Say, first visible position is 8, you want position 10, wantedChild
-		// will now be 2
-		// So that means your view is child #2 in the ViewGroup:
-		View wantedView = null;
-		if(wantedChild < 0 || wantedChild >= contextList.getChildCount()) {
-			Log.w(TAG,
-					"Unable to get view for desired position, because it's not being displayed on screen.");
-		} else {
-			wantedView = contextList.getChildAt(wantedChild);
-		}
-		// Could also check if wantedPosition is between
-		// listView.getFirstVisiblePosition() and
-		// listView.getLastVisiblePosition() instead.
-		
-		// float toX = ((left + (wantedView.getWidth() / 2)) / width);
-		float toX = 0.95f;
-		float toY = 1f;
-
-		if(wantedView != null) {
-			float top = wantedView.getTop();
-			toY = ((top + (wantedView.getHeight() / 2) + seachButton.getHeight()) / (height));
-		}
-		
-
-		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, toX,
-				Animation.RELATIVE_TO_SELF, toY);
-		anim.setInterpolator(new ReverseInterpolator());
-		anim.setDuration(StaticUtils.ANIMATION_DURATION);
-		return anim;
-	}
-
-	private void openBubbleSideAnimation(BubbleView bv) {
-		int wantedPosition = contextAdapter.getPosition(bv); // Whatever position you're looking for
-		int firstPosition = contextList.getFirstVisiblePosition() - contextList.getHeaderViewsCount(); // This is the same as child #0
-		int wantedChild = wantedPosition - firstPosition;
-		// Say, first visible position is 8, you want position 10, wantedChild will now be 2
-		// So that means your view is child #2 in the ViewGroup:
-		if (wantedChild < 0 || wantedChild >= contextList.getChildCount()) {
-		  Log.w(TAG, "Unable to get view for desired position, because it's not being displayed on screen.");
-		  return;
-		}
-		// Could also check if wantedPosition is between listView.getFirstVisiblePosition() and listView.getLastVisiblePosition() instead.
-		View wantedView = contextList.getChildAt(wantedChild);
-		
-		float left = wantedView.getLeft();
-		float top = wantedView.getTop();
-		// float toX = ((left + (wantedView.getWidth() / 2)) / width);
-		float toX = 0.95f;
-		float toY = ((top + (wantedView.getHeight() / 2) + seachButton.getHeight()) / (height));
-
-		final Animation scaleAnim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, toX,
-				Animation.RELATIVE_TO_SELF, toY);
-		scaleAnim.setFillBefore(true);
-		scaleAnim.setFillAfter(true);
-		scaleAnim.setInterpolator(new LinearInterpolator());
-		scaleAnim.setDuration(StaticUtils.ANIMATION_DURATION);
-		
-		root.startAnimation(scaleAnim);
-		
-		contextAdapter.setSelected(bv);
-	}
-
 	private double distanceFromCenter(View v1, View v2) {
 		float x1 = (v1.getLeft() + (v1.getWidth() / 2));
 		float y1 = (v1.getTop() + (v1.getHeight() / 2));
@@ -452,26 +336,7 @@ public class BubbleActivity extends BaseActivity {
 		return BubbleFragment.distance(x1, y1, x2, y2);
 	}
 
-	public void addContext(BubbleView bv) {
-		contextAdapter.add(bv);
-		contextAdapter.notifyDataSetChanged();
-		int position = contextAdapter.getPosition(bv);
-		contextList.smoothScrollToPosition(position);
-		changeContext(bv);
-	}
-
-	private OnItemClickListener onContextListClick = new OnItemClickListener() {
-
-		@Override
-		public void onItemClick(AdapterView<?> adapter, View view, int position, long id) {
-			BubbleView bv = contextAdapter.getItem(position);
-			if(contextAdapter.getSelected().getID() != bv.getID()) {
-				addContext(bv);
-			}
-		}
-	};
-
-	public void setTierZero(BubbleView bv, Animation anim) {
+	public void setTierZero(BubbleView bv, Animation anim, boolean addToHistory) {
 		if(tierOne != null) {
 			removeFragment(tierOne);
 			tierOne = null;
@@ -481,17 +346,24 @@ public class BubbleActivity extends BaseActivity {
 			tierTwo = null;
 		}
 
-		t0.startAnimation(anim);
+		if(addToHistory && tierZero != null && tierZero.getBubbleView() != null) {
+			float pX = 100;
+			float pY = 1000;
 
-		if(tierZero != null) {
-			animateSideContextChange(tierZero.getBubbleView(), bv);
-		} else {
-			tierZero = new TierZeroFragment();
-			tierZero.setBubbleView(bv);
-			changeFragment(R.id.tier_zero, tierZero);
+			Animation animateHistory = new ScaleAnimation(1.5f, 1, 1.5f, 1,
+					Animation.ABSOLUTE, pX,
+					Animation.ABSOLUTE, pY);
+			animateHistory.setDuration(StaticUtils.ANIMATION_DURATION);
+			animateHistory.setInterpolator(new AccelerateInterpolator());
+
+			historyLayer.addToHistory(tierZero.getBubbleView(), animateHistory);
 		}
 
-		contextAdapter.setSelected(bv);
+		t0.startAnimation(anim);
+
+		tierZero = new TierZeroFragment();
+		tierZero.setBubbleView(bv);
+		changeFragment(R.id.tier_zero, tierZero);
 	}
 
 	public void setTierZeroFromMeContext(View from, BubbleView bv) {
@@ -513,8 +385,7 @@ public class BubbleActivity extends BaseActivity {
 
 		meContextAdapter.setSelected(bv);
 		meContextFragment.redraw();
-		tierZero = null;
-		setTierZero(bv, anim);
+		setTierZero(bv, anim, true);
 	}
 
 	public void setTierOne(BubbleView bv) {
@@ -556,7 +427,7 @@ public class BubbleActivity extends BaseActivity {
 		from = (View) from.getParent();
 
 		float pivotX = (0.5f);
-		float pivotY = (0.5f);
+		float pivotY = (0.2f);
 
 		Animation anim = new ScaleAnimation(0, 1, 0, 1, 
 				Animation.RELATIVE_TO_SELF, pivotX,
@@ -564,9 +435,11 @@ public class BubbleActivity extends BaseActivity {
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
 		anim.setInterpolator(new AccelerateInterpolator());
 
-		setTierZero(bv, anim);
+		setTierZero(bv, anim, true);
 		tierOne = null;
 		setTierOne(bv);
+		
+		
 
 //		tierOneAdapter.setSelected(bv);
 //		tierOne.redraw();
@@ -583,6 +456,21 @@ public class BubbleActivity extends BaseActivity {
 //		tierTwo.setAdapter(tierTwoAdapter);
 //		tierTwo.setTierSize((int) getResources().getDimension(R.dimen.tier_two));
 //		changeFragment(R.id.tier_two, tierTwo);
+	}
+
+	@Override
+	public boolean handleMessage(Message msg) {
+
+		switch (SpacifyEvents.values()[msg.what]) {
+			case ALL_BUBBLES_FETCHED:
+				meContextAdapter.addAll(cms.getBubblesFromCursor(cms.getBubblesAlwaysOnScreen()));
+				meContextFragment.redraw();
+				break;
+			default:
+				break;
+		}
+
+		return super.handleMessage(msg);
 	}
 
 }

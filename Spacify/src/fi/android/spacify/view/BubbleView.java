@@ -35,6 +35,7 @@ public class BubbleView extends BaseBubbleView {
 		public static final String titleImageUrl = "titleImageUrl";
 		public static final String contentsImageUrl = "contentsImageUrl";
 		public static final String context = "context";
+		public static final String alwaysOnScreen = "alwaysOnScreen";
 	}
 
 	public static class BubbleContexts {
@@ -59,15 +60,17 @@ public class BubbleView extends BaseBubbleView {
 	private int priority;
 	private String debugID = "", type = "", style = "", title = "", contents = "", titleImageUrl = "",
 			contentImageUrl = "";
-	private List<Integer> links = new ArrayList<Integer>();
+	private List<String> links = new ArrayList<String>();
 	private long latitude = 0, longitude = 0;
 	private Set<String> contexts = new HashSet<String>();
+
+	public boolean alwaysOnScreen = true;
 
 	private void init() {
 		zoom(1);
 	}
 
-	public BubbleView(Context context, int id) {
+	public BubbleView(Context context, String id) {
 		super(context);
 		this.id = id;
 		init();
@@ -83,7 +86,7 @@ public class BubbleView extends BaseBubbleView {
 	}
 
 	public void updateContent(Cursor c) {
-		id = c.getInt(c.getColumnIndex(BubbleColumns.ID));
+		id = c.getString(c.getColumnIndex(BubbleColumns.ID));
 		title = c.getString(c.getColumnIndex(BubbleColumns.TITLE));
 		setText(title);
 		style = c.getString(c.getColumnIndex(BubbleColumns.STYLE));
@@ -111,6 +114,7 @@ public class BubbleView extends BaseBubbleView {
 		contentImageUrl = c.getString(c.getColumnIndex(BubbleColumns.CONTENT_IMAGE_URL));
 		latitude = c.getLong(c.getColumnIndex(BubbleColumns.LATITUDE));
 		longitude = c.getLong(c.getColumnIndex(BubbleColumns.LONGITUDE));
+		setAlwaysVisible(c.getInt(c.getColumnIndex(BubbleColumns.ALWAYS_ON_SCREEN)));
 
 		x = c.getInt(c.getColumnIndex(BubbleColumns.X));
 		y = c.getInt(c.getColumnIndex(BubbleColumns.Y));
@@ -200,15 +204,15 @@ public class BubbleView extends BaseBubbleView {
 		this.contentImageUrl = contentImageUrl;
 	}
 
-	public List<Integer> getLinks() {
+	public List<String> getLinks() {
 		return links;
 	}
 
-	public void setLinks(List<Integer> links) {
+	public void setLinks(List<String> links) {
 		this.links = links;
 	}
 
-	public void addLink(int link) {
+	public void addLink(String link) {
 		if (!links.contains(link)) {
 			this.links.add(link);
 		}
@@ -220,7 +224,7 @@ public class BubbleView extends BaseBubbleView {
 
 	public JSONArray getLinksJSONArray() {
 		JSONArray jArray = new JSONArray();
-		for (int link : links) {
+		for(String link : links) {
 			jArray.put(link);
 		}
 		return jArray;
@@ -229,7 +233,7 @@ public class BubbleView extends BaseBubbleView {
 	public void parseJsonLinks(JSONArray jArray) {
 		for (int i = 0; i < jArray.length(); i++) {
 			try {
-				links.add(jArray.getInt(i));
+				links.add(jArray.getString(i));
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}
@@ -304,4 +308,15 @@ public class BubbleView extends BaseBubbleView {
 		return R.layout.base_bubble;
 	}
 
+	public int isAlwaysVisible() {
+		return alwaysOnScreen ? 1 : 0;
+	}
+
+	public void setAlwaysVisible(boolean visible) {
+		alwaysOnScreen = visible;
+	}
+
+	public void setAlwaysVisible(int visible) {
+		alwaysOnScreen = visible == 1;
+	}
 }

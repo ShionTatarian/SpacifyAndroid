@@ -29,10 +29,11 @@
 
     <!-- Tiers -->
     <dimen name="tier_one">700dp</dimen>
-    <dimen name="tier_one_offset">-350dp</dimen>
+    <dimen name="tier_one_offset">-250dp</dimen>
     <dimen name="tier_one_bubble">100dp</dimen>
     <dimen name="tier_two">750dp</dimen>
     <dimen name="tier_two_offset">-300dp</dimen>
     <dimen name="tier_two_bubble">50dp</dimen>
+    <dimen name="history_bubble">100dp</dimen>
 
 </resources>
