@@ -8,20 +8,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.RelativeLayout.LayoutParams;
 import fi.android.spacify.R;
 import fi.android.spacify.view.BubbleView;
 
 public class BubbleControlFragment extends BaseFragment {
 
 	protected ViewGroup layout;
-	private BubbleFragment frame;
 	private BubbleView bv;
 	private ArrayAdapter<Integer> adapter;
 	protected List<View> views = new ArrayList<View>();
-
-	public void setBubbleFrame(BubbleFragment frame) {
-		this.frame = frame;
-	}
 
 	public void setAdapter(ArrayAdapter<Integer> adapter) {
 		this.adapter = adapter;
@@ -34,6 +30,11 @@ public class BubbleControlFragment extends BaseFragment {
 		double c = (int) (Math.PI * size);
 		double count = c / (controlBubbleSize * 3 / 2);
 		double angle = 360d / count;
+
+		android.widget.FrameLayout.LayoutParams params = (android.widget.FrameLayout.LayoutParams) layout.getLayoutParams();
+		params.height = size;
+		params.width = size;
+		layout.setLayoutParams(params);
 
 		for(int i = 0; i < adapter.getCount(); i++) {
 			View v = adapter.getView(i, null, layout);

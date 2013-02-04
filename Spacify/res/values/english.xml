@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Spacify</string>
+    <string name="app_name">Spaceify</string>
 
     <!-- Controls -->
     <string name="control_fullscreen">Fullscreen</string>
@@ -11,5 +11,15 @@
     <string name="tab_map">Map</string>
     <string name="tab_me">My</string>
     <string name="tab_server">Server</string>
+
+    <!-- Content -->
+    <string name="content_open">Open</string>
+    <string name="content_close">Close</string>
+
+    <!-- Login -->
+    <string name="login_login_button">Login</string>
+
+    <!-- Command bubbles -->
+    <string name="web_command_bubble">www</string>
 
 </resources>

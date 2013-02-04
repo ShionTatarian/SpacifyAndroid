@@ -16,10 +16,4 @@
         android:layout_margin="@dimen/margin_normal"
         android:visibility="visible" />
 
-    <FrameLayout
-        android:id="@+id/popup_controls"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" >
-    </FrameLayout>
-
 </RelativeLayout>

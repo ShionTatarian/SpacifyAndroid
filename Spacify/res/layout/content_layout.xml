@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="@dimen/margin_normal"
+    android:background="@drawable/popup_control_box" >
+
+    <TextView
+        android:id="@+id/content_text"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:autoLink="web"
+        android:padding="@dimen/margin_normal"
+        android:textSize="@dimen/text_large" />
+
+    <Button
+        android:id="@+id/content_open_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/popup_control_box"
+        android:drawablePadding="5dp"
+        android:drawableRight="@android:drawable/arrow_down_float"
+        android:onClick="onOpenContentClick"
+        android:padding="10dp"
+        android:text="@string/content_open" />
+
+</RelativeLayout>

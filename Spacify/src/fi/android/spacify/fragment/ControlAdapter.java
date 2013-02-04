@@ -1,6 +1,12 @@
 package fi.android.spacify.fragment;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -9,24 +15,32 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import fi.android.spacify.R;
+import fi.android.spacify.activity.BubbleActivity;
+import fi.android.spacify.service.AccountService;
 import fi.android.spacify.view.BubbleView;
+import fi.android.spacify.view.BubbleView.BubbleJSON;
 
 public class ControlAdapter extends ArrayAdapter<Integer> {
 
 	public class COMMANDS {
-		public static final int TOGGLE_LINKS = 1000;
+		public static final int SHOW_CONTENT = 1000;
 		public static final int IMAGE = 1001;
-		public static final int VIDEO = 1002;
+		public static final int LINK_COUNT = 1002;
 		public static final int EDIT = 1003;
+		public static final int FAVORITE = 1004;
+		public static final int WEB = 1005;
+		public static final int VIDEO = 1006;
+		public static final int CALL_TO_SCREEN = 1007;
 	}
 
 	private BubbleView bv;
-	private BubbleFragment bf;
+	private BubbleActivity act;
+	private final AccountService account = AccountService.getInstance();
 
-	public ControlAdapter(Context context, BubbleView bv, BubbleFragment bf) {
+	public ControlAdapter(Context context, BubbleView bv, BubbleActivity act) {
 		super(context, 0);
 		this.bv = bv;
-		this.bf = bf;
+		this.act = act;
 	}
 
 	@Override
@@ -40,11 +54,11 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 
 		switch (item) {
 			default:
-			case COMMANDS.TOGGLE_LINKS:
+			case COMMANDS.SHOW_CONTENT:
 				holder.text.setVisibility(View.GONE);
 				holder.image.setVisibility(View.VISIBLE);
-				holder.image.setOnClickListener(toggleLinks);
-				holder.image.setImageResource(android.R.drawable.ic_menu_share);
+				holder.image.setOnClickListener(onContentClick);
+				holder.image.setImageResource(android.R.drawable.ic_menu_help);
 				break;
 			case COMMANDS.IMAGE:
 				holder.text.setVisibility(View.GONE);
@@ -52,27 +66,88 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 				holder.image.setOnClickListener(onImageClick);
 				holder.image.setImageResource(android.R.drawable.ic_menu_gallery);
 				break;
-			case COMMANDS.VIDEO:
-				holder.text.setVisibility(View.GONE);
+			case COMMANDS.LINK_COUNT:
+				holder.text.setVisibility(View.VISIBLE);
+				holder.text.setText("" + bv.getLinks().size());
 				holder.image.setVisibility(View.VISIBLE);
-				holder.image.setImageResource(android.R.drawable.ic_media_play);
+				holder.image.setBackgroundResource(R.drawable.greenball);
 				break;
-			case COMMANDS.EDIT:
+			case COMMANDS.WEB:
+				holder.text.setVisibility(View.VISIBLE);
+				holder.text.setText(R.string.web_command_bubble);
+				holder.image.setVisibility(View.VISIBLE);
+				holder.image.setBackgroundResource(R.drawable.lightblueball);
+				holder.image.setOnClickListener(onWebClick);
+				break;
+			case COMMANDS.FAVORITE:
 				holder.text.setVisibility(View.GONE);
 				holder.image.setVisibility(View.VISIBLE);
-				holder.image.setOnClickListener(onEditClick);
-				holder.image.setImageResource(android.R.drawable.ic_menu_edit);
+				holder.image.setOnClickListener(onFavoriteClick);
+				if(account.isFavorite(bv)) {
+					holder.image.setImageResource(android.R.drawable.btn_star_big_on);
+				} else {
+					holder.image.setImageResource(android.R.drawable.btn_star_big_off);
+				}
+				break;
+			case COMMANDS.CALL_TO_SCREEN:
+				holder.image.setVisibility(View.VISIBLE);
+				holder.image.setImageResource(android.R.drawable.ic_menu_mylocation);
+				holder.image.setOnClickListener(onCallToScreenClick);
 				break;
 		}
 
 		return convertView;
 	}
 
-	private OnClickListener toggleLinks = new OnClickListener() {
+	private OnClickListener onWebClick = new OnClickListener() {
 
 		@Override
 		public void onClick(View v) {
-			bf.onBubbleViewClick(bv);
+			String url = null;
+			try {
+				JSONObject third = bv.getStyleOverrides().getJSONObject(BubbleJSON.thirdLayer);
+				if(third != null) {
+					url = third.getString(BubbleJSON.webSiteUrl);
+				}
+			} catch(JSONException e) {
+			}
+
+			if(!TextUtils.isEmpty(url)) {
+				Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+				act.startActivity(intent);
+			}
+		}
+	};
+
+	private OnClickListener onCallToScreenClick = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			account.callToScreen();
+		}
+	};
+
+	private OnClickListener onFavoriteClick = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			account.toggleFavorite(bv);
+			if(v instanceof ImageView) {
+				ImageView image = (ImageView) v;
+				if(account.isFavorite(bv)) {
+					image.setImageResource(android.R.drawable.btn_star_big_on);
+				} else {
+					image.setImageResource(android.R.drawable.btn_star_big_off);
+				}
+			}
+		}
+	};
+
+	private OnClickListener onContentClick = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			// act.setContent(bv);
 		}
 	};
 
@@ -80,7 +155,7 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 
 		@Override
 		public void onClick(View v) {
-			bf.onImageClick(bv);
+			act.onImageClick(bv);
 		}
 	};
 
@@ -88,7 +163,6 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 
 		@Override
 		public void onClick(View v) {
-			bf.onEditClick(bv);
 		}
 	};
 

@@ -7,24 +7,37 @@
     <FrameLayout
         android:id="@+id/wheel_touch_area"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="@dimen/margin_double" >
+        android:layout_height="wrap_content" >
+
+        <TextView
+            android:id="@+id/wheel_link_count"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/greenball"
+            android:gravity="center"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/text_normal"
+            android:visibility="visible" />
 
         <ImageView
             android:id="@+id/wheel_background"
             android:layout_width="@dimen/tier_one_bubble"
             android:layout_height="@dimen/tier_one_bubble"
-            android:background="@drawable/greenball"
-            android:padding="@dimen/margin_normal"
+            android:layout_margin="@dimen/margin_double"
             android:scaleType="fitCenter"
+            android:src="@drawable/lightblueball"
             android:visibility="visible" />
 
         <TextView
             android:id="@+id/wheel_text"
             android:layout_width="@dimen/tier_one_bubble"
             android:layout_height="@dimen/tier_one_bubble"
+            android:layout_margin="@dimen/margin_double"
             android:gravity="center"
             android:padding="@dimen/margin_normal"
+            android:textColor="@android:color/white"
+            android:textSize="10dp"
             android:visibility="visible" />
     </FrameLayout>
 

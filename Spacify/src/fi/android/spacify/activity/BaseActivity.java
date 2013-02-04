@@ -7,8 +7,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
-import fi.android.service.EventService;
-import fi.android.service.WorkService;
+import fi.qvik.android.util.EventBus;
+import fi.qvik.android.util.WorkService;
 
 /**
  * Base activity for all activities in Spacify application. Extends
@@ -25,13 +25,13 @@ public class BaseActivity extends FragmentActivity implements Callback {
 	protected boolean onTop = false;
 	protected boolean started = false;
 
-	protected EventService es;
+	protected EventBus es;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		started = true;
-		es = EventService.getInstance();
+		es = EventBus.getInstance();
 		es.addCallback(this);
 	}
 

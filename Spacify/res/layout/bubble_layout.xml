@@ -22,12 +22,55 @@
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/tier_two"
-        android:layout_width="@dimen/tier_two"
-        android:layout_height="@dimen/tier_two"
+        android:id="@+id/control_popup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="@dimen/tier_two_offset" >
+        android:layout_marginBottom="25dp"
+        android:visibility="visible" >
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/tier_zero"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/round_context_list"
+        android:layout_width="@dimen/context_round_list"
+        android:layout_height="@dimen/context_round_list"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="-135dp"
+        android:layout_marginLeft="-135dp" >
+    </FrameLayout>
+
+    <Button
+        android:id="@+id/button_me"
+        android:layout_width="@dimen/context_me"
+        android:layout_height="@dimen/context_me"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="-75dp"
+        android:layout_marginLeft="-75dp"
+        android:background="@drawable/greenball"
+        android:gravity="right"
+        android:onClick="onMeClick"
+        android:padding="40dp"
+        android:text="ME" />
+
+    <FrameLayout
+        android:id="@+id/history_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/third_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
     </FrameLayout>
 
     <ImageView
@@ -61,43 +104,13 @@
     </LinearLayout>
 
     <FrameLayout
-        android:id="@+id/tier_zero"
+        android:id="@+id/content_layer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="@dimen/content_height" >
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/round_context_list"
-        android:layout_width="@dimen/context_round_list"
-        android:layout_height="@dimen/context_round_list"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_marginBottom="-125dp"
-        android:layout_marginLeft="-125dp" >
-    </FrameLayout>
-
-    <Button
-        android:id="@+id/button_me"
-        android:layout_width="@dimen/context_me"
-        android:layout_height="@dimen/context_me"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_marginBottom="-75dp"
-        android:layout_marginLeft="-75dp"
-        android:background="@drawable/greenball"
-        android:gravity="right"
-        android:onClick="onMeClick"
-        android:padding="40dp"
-        android:text="ME" />
-
-    <FrameLayout
-        android:id="@+id/third_layer"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" >
-    </FrameLayout>
-
-    <FrameLayout
-        android:id="@+id/history_layer"
+        android:id="@+id/login_layer"
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
     </FrameLayout>

@@ -3,22 +3,48 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <TextView
-        android:id="@+id/history_previous"
+    <FrameLayout
+        android:id="@+id/history_previous_layout"
         android:layout_width="@dimen/history_bubble"
-        android:layout_height="@dimen/history_bubble"
-        android:background="@drawable/lightblueball"
-        android:gravity="center"
-        android:padding="15dp"
-        android:textSize="@dimen/text_huge" />
+        android:layout_height="@dimen/history_bubble" >
 
-    <TextView
-        android:id="@+id/history_animating_view"
+        <ImageView
+            android:id="@+id/history_previous_background"
+            android:layout_width="@dimen/history_bubble"
+            android:layout_height="@dimen/history_bubble"
+            android:scaleType="fitCenter"
+            android:src="@drawable/lightblueball" />
+
+        <TextView
+            android:id="@+id/history_previous_text"
+            android:layout_width="@dimen/history_bubble"
+            android:layout_height="@dimen/history_bubble"
+            android:gravity="center"
+            android:padding="10dp"
+            android:textColor="@android:color/white"
+            android:textSize="14dp" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/history_animating_layout"
         android:layout_width="@dimen/history_bubble"
-        android:layout_height="@dimen/history_bubble"
-        android:background="@drawable/lightblueball"
-        android:gravity="center"
-        android:padding="15dp"
-        android:textSize="@dimen/text_huge" />
+        android:layout_height="@dimen/history_bubble" >
+
+        <ImageView
+            android:id="@+id/history_animating_background"
+            android:layout_width="@dimen/history_bubble"
+            android:layout_height="@dimen/history_bubble"
+            android:scaleType="fitCenter"
+            android:src="@drawable/lightblueball" />
+
+        <TextView
+            android:id="@+id/history_animating_text"
+            android:layout_width="@dimen/history_bubble"
+            android:layout_height="@dimen/history_bubble"
+            android:gravity="center"
+            android:padding="10dp"
+            android:textColor="@android:color/white"
+            android:textSize="14dp" />
+    </FrameLayout>
 
 </FrameLayout>

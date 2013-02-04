@@ -6,7 +6,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Build;
 import android.preference.PreferenceManager;
-import fi.android.service.WorkService;
+import fi.qvik.android.util.WorkService;
 
 /**
  * Settings class. Stores and loads values to {@link SharedPreferences}.
@@ -28,6 +28,15 @@ public class BaseSettings {
 	private static BaseSettings instance;
 	private Context context;
 	private SharedPreferences preferences;
+
+	public interface Preferences {
+		public static final String USER_NICK = "user_nick";
+		public static final String USER_PASSWORD = "user_password";
+		public static final String AVATAR_ID = "avatar_bubble_id";
+		public static final String USER_FIRST_NAME = "user_first_name";
+		public static final String USER_LAST_NAME = "user_last_name";
+		public static final String USER_FAVORITES = "user_favorites";
+	}
 
 	/**
 	 * Constructor.

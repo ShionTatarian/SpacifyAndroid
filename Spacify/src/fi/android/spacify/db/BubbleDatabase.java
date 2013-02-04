@@ -12,6 +12,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.text.TextUtils;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.BubbleView.BubbleContexts;
 import fi.android.spacify.view.BubbleView.BubbleJSON;
@@ -35,9 +36,10 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		public static final String TITLE = "title";
 		public static final String STYLE = "style";
 		public static final String CONTENTS = "contents";
-		public static final String PRIORITY = "priority";
+		public static final String SIZE = "priority";
 		public static final String TITLE_IMAGE_URL = "title_image_url";
 		public static final String LINKS = "links";
+		public static final String STYLE_OVERRIDES = "style_overrides";
 		public static final String TYPE = "type";
 		public static final String DEBUG_ID = "debug_id";
 		public static final String CONTENT_IMAGE_URL = "contents_image_url";
@@ -80,9 +82,10 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		sql.append(BubbleColumns.TITLE).append(" TEXT,");
 		sql.append(BubbleColumns.STYLE).append(" TEXT,");
 		sql.append(BubbleColumns.CONTENTS).append(" TEXT,");
-		sql.append(BubbleColumns.PRIORITY).append(" INTEGER,");
+		sql.append(BubbleColumns.SIZE).append(" INTEGER,");
 		sql.append(BubbleColumns.TITLE_IMAGE_URL).append(" TEXT,");
 		sql.append(BubbleColumns.LINKS).append(" TEXT,");
+		sql.append(BubbleColumns.STYLE_OVERRIDES).append(" TEXT,");
 		sql.append(BubbleColumns.TYPE).append(" TEXT,");
 		sql.append(BubbleColumns.DEBUG_ID).append(" TEXT,");
 		sql.append(BubbleColumns.CONTENT_IMAGE_URL).append(" TEXT,");
@@ -110,31 +113,34 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 
 		for(BubbleView b : bubbles) {
 			ContentValues values = new ContentValues();
-			values.put(BubbleColumns.ID, b.getID());
-			values.put(BubbleColumns.TITLE, b.getTitle());
-			values.put(BubbleColumns.STYLE, b.getStyle());
-			values.put(BubbleColumns.CONTENTS, b.getContents());
-			values.put(BubbleColumns.PRIORITY, b.getPriority());
-			values.put(BubbleColumns.TITLE_IMAGE_URL, b.getTitleImageUrl());
-			values.put(BubbleColumns.LINKS, b.getLinksJSONArray().toString());
-			values.put(BubbleColumns.TYPE, b.getType());
-			values.put(BubbleColumns.DEBUG_ID, b.getDebugID());
-			values.put(BubbleColumns.CONTENT_IMAGE_URL, b.getContentImageUrl());
-			values.put(BubbleColumns.LATITUDE, b.getLattitude());
-			values.put(BubbleColumns.LONGITUDE, b.getLongitude());
-			int[] position = b.getViewPosition();
-			values.put(BubbleColumns.X, position[0]);
-			values.put(BubbleColumns.Y, position[1]);
-			values.put(BubbleColumns.ALWAYS_ON_SCREEN, b.isAlwaysVisible());
-			values.put(BubbleColumns.CONTEXT, b.getContextJSON());
+			String id = b.getID();
+			if(!TextUtils.isEmpty(id)) {
+				values.put(BubbleColumns.ID, id);
+				values.put(BubbleColumns.TITLE, b.getTitle());
+				values.put(BubbleColumns.STYLE, b.getStyle());
+				values.put(BubbleColumns.CONTENTS, b.getContents());
+				values.put(BubbleColumns.SIZE, b.getPriority());
+				values.put(BubbleColumns.TITLE_IMAGE_URL, b.getTitleImageUrl());
+				values.put(BubbleColumns.LINKS, b.getLinksJSONArray().toString());
+				values.put(BubbleColumns.TYPE, b.getType());
+				values.put(BubbleColumns.DEBUG_ID, b.getDebugID());
+				values.put(BubbleColumns.CONTENT_IMAGE_URL, b.getContentImageUrl());
+				values.put(BubbleColumns.LATITUDE, b.getLattitude());
+				values.put(BubbleColumns.LONGITUDE, b.getLongitude());
+				int[] position = b.getViewPosition();
+				values.put(BubbleColumns.X, position[0]);
+				values.put(BubbleColumns.Y, position[1]);
+				values.put(BubbleColumns.ALWAYS_ON_SCREEN, b.isAlwaysVisible());
+				values.put(BubbleColumns.CONTEXT, b.getContextJSON());
 
-			long change = -1;
+				long change = -1;
 
-			try {
-				change = db.insertOrThrow(BUBBLE_TABLE, null, values);
-			} catch(SQLException e) {
-				String where = BubbleColumns.ID + " = " + b.getID();
-				change = db.update(BUBBLE_TABLE, values, where, null);
+				try {
+					change = db.insertOrThrow(BUBBLE_TABLE, null, values);
+				} catch(SQLException e) {
+					String where = BubbleColumns.ID + " = '" + b.getID() + "'";
+					change = db.update(BUBBLE_TABLE, values, where, null);
+				}
 			}
 		}
 
@@ -145,7 +151,7 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 	public Cursor getTopLevelBubblesCursor() {
 		SQLiteDatabase db = getReadableDatabase();
 		String selection = "";
-		selection = BubbleColumns.PRIORITY + " > 0";
+		selection = BubbleColumns.SIZE + " > 0";
 		
 		return db.query(BUBBLE_TABLE, null, selection, null, null, null,
 				BubbleColumns.TITLE);
@@ -154,7 +160,7 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 	public Cursor getBubblesWithPriority(int priority) {
 		SQLiteDatabase db = getReadableDatabase();
 		String selection = "";
-		selection = BubbleColumns.PRIORITY + " > " + priority;
+		selection = BubbleColumns.SIZE + " > " + priority;
 
 		return db.query(BUBBLE_TABLE, null, selection, null, null, null, BubbleColumns.TITLE);
 	}
@@ -178,15 +184,17 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 	public Cursor getLinkedBubblesCursor(List<String> links) {
 		SQLiteDatabase db = getReadableDatabase();
 		
-		String separator = "";
-		String linkString = "";
-		for(String link : links) {
-			linkString += separator + "'" + link + "'";
-			separator = ", ";
+		String selection = null;
+		if(links != null) {
+			String separator = "";
+			String linkString = "";
+			for(String link : links) {
+				linkString += separator + "'" + link + "'";
+				separator = ", ";
+			}
+
+			selection = BubbleColumns.ID + " IN (" + linkString + ")";
 		}
-		
-		String selection = BubbleColumns.ID + " IN (" + linkString + ")";
-		
 		return db.query(BUBBLE_TABLE, null, selection, null, null, null,
 				BubbleColumns.TITLE);
 	}
@@ -201,42 +209,53 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 
 			for(int i = 0; i < jArray.length(); i++) {
 				JSONObject b = jArray.getJSONObject(i);
-
 				ContentValues values = new ContentValues();
-				String id = StaticUtils.parseStringJSON(b, BubbleJSON.id, "-1");
-				values.put(BubbleColumns.ID, id);
-				values.put(BubbleColumns.TITLE, StaticUtils.parseStringJSON(b, BubbleJSON.title, ""));
-				values.put(BubbleColumns.STYLE, StaticUtils.parseStringJSON(b, BubbleJSON.style, ""));
-				values.put(BubbleColumns.CONTENTS, StaticUtils.parseStringJSON(b, BubbleJSON.contents, ""));
-				if(b.has(BubbleJSON.priority)) {
-					values.put(BubbleColumns.PRIORITY, StaticUtils.parseIntJSON(b, BubbleJSON.priority, -1));
-				} else if(b.has(BubbleJSON.size)) {
-					values.put(BubbleColumns.PRIORITY,StaticUtils.parseIntJSON(b, BubbleJSON.size, -1));
-				}
-				values.put(BubbleColumns.TITLE_IMAGE_URL, StaticUtils.parseStringJSON(b, BubbleJSON.titleImageUrl, ""));
-				if(b.has(BubbleJSON.links)) {
-					values.put(BubbleColumns.LINKS, b.getJSONArray(BubbleJSON.links).toString());
-				}
-				if(b.has(BubbleJSON.context)) {
-					values.put(BubbleColumns.CONTEXT, b.getJSONArray(BubbleJSON.context).toString());
-				} else {
-					values.put(BubbleColumns.CONTEXT, "[" + BubbleContexts.CMS + "]");
-				}
-				values.put(BubbleColumns.TYPE, StaticUtils.parseStringJSON(b, BubbleJSON.type, ""));
-				values.put(BubbleColumns.DEBUG_ID, StaticUtils.parseStringJSON(b, BubbleJSON.debugID, ""));
-				values.put(BubbleColumns.CONTENT_IMAGE_URL, StaticUtils.parseStringJSON(b, BubbleJSON.contentsImageUrl, ""));
-				values.put(BubbleColumns.LATITUDE, 0);
-				values.put(BubbleColumns.LONGITUDE, 0);
-				values.put(BubbleColumns.ALWAYS_ON_SCREEN,
-						StaticUtils.parseBooleanJSON(b, BubbleJSON.alwaysOnScreen, false) ? 1 : 0);
-				values.put(BubbleColumns.X, -1);
-				values.put(BubbleColumns.Y, -1);
+				String id = StaticUtils.parseStringJSON(b, BubbleJSON.id, "");
+				if(!TextUtils.isEmpty(id)) {
+					values.put(BubbleColumns.ID, id);
+					values.put(BubbleColumns.TITLE,
+							StaticUtils.parseStringJSON(b, BubbleJSON.title, ""));
+					values.put(BubbleColumns.STYLE,
+							StaticUtils.parseStringJSON(b, BubbleJSON.style, ""));
+					values.put(BubbleColumns.CONTENTS,
+							StaticUtils.parseStringJSON(b, BubbleJSON.contents, ""));
+					if(b.has(BubbleJSON.priority)) {
+						values.put(BubbleColumns.SIZE,
+								StaticUtils.parseIntJSON(b, BubbleJSON.priority, -1));
+					} else if(b.has(BubbleJSON.size)) {
+						values.put(BubbleColumns.SIZE,
+								StaticUtils.parseIntJSON(b, BubbleJSON.size, -1));
+					}
+					values.put(BubbleColumns.TITLE_IMAGE_URL,
+							StaticUtils.parseStringJSON(b, BubbleJSON.titleImageUrl, ""));
+					if(b.has(BubbleJSON.links)) {
+						values.put(BubbleColumns.LINKS, b.getJSONArray(BubbleJSON.links).toString());
+					}
+					if(b.has(BubbleJSON.context)) {
+						values.put(BubbleColumns.CONTEXT, b.getJSONArray(BubbleJSON.context)
+								.toString());
+					} else {
+						values.put(BubbleColumns.CONTEXT, "[" + BubbleContexts.CMS + "]");
+					}
+					values.put(BubbleColumns.TYPE,
+							StaticUtils.parseStringJSON(b, BubbleJSON.type, ""));
+					values.put(BubbleColumns.DEBUG_ID,
+							StaticUtils.parseStringJSON(b, BubbleJSON.debugID, ""));
+					values.put(BubbleColumns.CONTENT_IMAGE_URL,
+							StaticUtils.parseStringJSON(b, BubbleJSON.contentsImageUrl, ""));
+					values.put(BubbleColumns.LATITUDE, 0);
+					values.put(BubbleColumns.LONGITUDE, 0);
+					values.put(BubbleColumns.ALWAYS_ON_SCREEN, StaticUtils.parseBooleanJSON(b,
+							BubbleJSON.alwaysOnScreen, false) ? 1 : 0);
+					values.put(BubbleColumns.STYLE_OVERRIDES,
+							b.getJSONObject(BubbleJSON.styleOverrides).toString());
 
-				try {
-					db.insertOrThrow(BUBBLE_TABLE, null, values);
-				} catch(SQLException e) {
-					String where = BubbleColumns.ID + " = '" + id + "'";
-					db.update(BUBBLE_TABLE, values, where, null);
+					try {
+						db.insertOrThrow(BUBBLE_TABLE, null, values);
+					} catch(SQLException e) {
+						String where = BubbleColumns.ID + " = '" + id + "'";
+						db.update(BUBBLE_TABLE, values, where, null);
+					}
 				}
 			}
 		} catch(JSONException e) {
@@ -255,6 +274,26 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		BubbleColumns.CONTEXT + " LIKE '%" + constraint + "%'";
 		Cursor c = db.rawQuery(sql, null);
 		return c;
+	}
+
+	public void updateAvatarLink(String avatarBubbleID, JSONArray avatarLinkJSON) {
+		SQLiteDatabase db = getWritableDatabase();
+
+		db.beginTransaction();
+
+		ContentValues values = new ContentValues();
+		values.put(BubbleColumns.LINKS, avatarLinkJSON.toString());
+
+		String where = BubbleColumns.ID + " = '" + avatarBubbleID + "'";
+		db.update(BUBBLE_TABLE, values, where, null);
+
+		db.setTransactionSuccessful();
+		db.endTransaction();
+	}
+
+	public void removeAvatarLink(String avatarBubbleID, BubbleView bv) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

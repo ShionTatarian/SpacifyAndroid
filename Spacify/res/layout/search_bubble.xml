@@ -3,11 +3,16 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" >
 
+    <ImageView
+        android:id="@+id/search_bubble_image"
+        android:layout_width="@dimen/search_bubble_size"
+        android:layout_height="@dimen/search_bubble_size"
+        android:src="@drawable/lightblueball" />
+
     <TextView
         android:id="@+id/search_bubble_textview"
         android:layout_width="@dimen/search_bubble_size"
         android:layout_height="@dimen/search_bubble_size"
-        android:background="@drawable/greenball"
         android:gravity="center"
         android:maxLines="2"
         android:padding="@dimen/margin_normal"

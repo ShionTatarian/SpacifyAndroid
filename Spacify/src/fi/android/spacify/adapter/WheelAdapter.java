@@ -15,7 +15,7 @@ public abstract class WheelAdapter extends ArrayAdapter<BubbleView> {
 
 	private int size;
 	protected BubbleActivity bubbleAct;
-	private BubbleView selected;
+	protected BubbleView selected;
 
 	public WheelAdapter(BubbleActivity context) {
 		super(context, 0);
@@ -33,14 +33,13 @@ public abstract class WheelAdapter extends ArrayAdapter<BubbleView> {
 		BubbleView bv = getItem(position);
 		if(bv != null) {
 			if(selected != null && bv.getID() == selected.getID()) {
-				holder.background.setBackgroundResource(R.drawable.greenball);
+				holder.background.setImageResource(R.drawable.greenball);
 			} else {
-				holder.background.setBackgroundResource(R.drawable.lightblueball);
+				holder.background.setImageResource(R.drawable.lightblueball);
 			}
 
 			holder.text.setText(bv.getTitle());
 		}
-
 
 		return convertView;
 	}
@@ -53,7 +52,7 @@ public abstract class WheelAdapter extends ArrayAdapter<BubbleView> {
 
 	public class ViewHolder {
 		public int position = -1;
-		public TextView text;
+		public TextView text, linkCount;
 		public ImageView background;
 		public View touchArea;
 
@@ -61,6 +60,8 @@ public abstract class WheelAdapter extends ArrayAdapter<BubbleView> {
 			text = (TextView) v.findViewById(R.id.wheel_text);
 			background = (ImageView) v.findViewById(R.id.wheel_background);
 			touchArea = v.findViewById(R.id.wheel_touch_area);
+			linkCount = (TextView) v.findViewById(R.id.wheel_link_count);
+			linkCount.setVisibility(View.GONE);
 			setViewSize(text);
 			setViewSize(background);
 		}

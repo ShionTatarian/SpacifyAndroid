@@ -1,6 +1,6 @@
 package fi.android.spacify.activity;
 
-import java.util.Random;
+import org.json.JSONObject;
 
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
@@ -8,9 +8,12 @@ import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Message;
+import android.support.v4.app.FragmentTransaction;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,9 +23,12 @@ import android.view.animation.Animation.AnimationListener;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.ScaleAnimation;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FilterQueryProvider;
+import android.widget.FrameLayout;
 import android.widget.Gallery;
 import android.widget.ImageView;
 import android.widget.RelativeLayout.LayoutParams;
@@ -32,14 +38,20 @@ import fi.android.spacify.adapter.MeContextAdapter;
 import fi.android.spacify.adapter.TierOneAdapter;
 import fi.android.spacify.adapter.WheelAdapter;
 import fi.android.spacify.animation.ReverseInterpolator;
+import fi.android.spacify.fragment.BubbleControlFragment;
 import fi.android.spacify.fragment.BubbleFragment;
+import fi.android.spacify.fragment.ContentFragment;
 import fi.android.spacify.fragment.HistoryLayerFragment;
+import fi.android.spacify.fragment.LoginFragment;
 import fi.android.spacify.fragment.ThirdLayerBaseFragment;
+import fi.android.spacify.fragment.TierOneWheelListFragment;
 import fi.android.spacify.fragment.TierZeroFragment;
 import fi.android.spacify.fragment.WheelListFragment;
+import fi.android.spacify.service.AccountService;
 import fi.android.spacify.service.ContentManagementService;
+import fi.android.spacify.view.AvatarBubble;
 import fi.android.spacify.view.BubbleView;
-import fi.android.spacify.view.BubbleView.BubbleContexts;
+import fi.android.spacify.view.BubbleView.BubbleJSON;
 import fi.spacify.android.util.SpacifyEvents;
 import fi.spacify.android.util.StaticUtils;
 
@@ -48,6 +60,8 @@ public class BubbleActivity extends BaseActivity {
 	private final String TAG = "BubbleActivity";
 
 	private final ContentManagementService cms = ContentManagementService.getInstance();
+	private final AccountService account = AccountService.getInstance();
+
 	private ViewGroup root;
 	private View bg, searchLayout;
 	private EditText searchEdit;
@@ -57,31 +71,31 @@ public class BubbleActivity extends BaseActivity {
 	private ImageView seachButton;
 	private BubbleFragment activeBubbleFragment;
 	private ValueAnimator va;
-	private Animation closeFragmentAnimation;
 	private Button meBubble;
 
 	private int contextLarge, contextSmall;
 
-	private WheelListFragment meContextFragment, tierOne, tierTwo;
+	private WheelListFragment meContextFragment, tierOne;
 	private WheelAdapter meContextAdapter;
 
 	private boolean tierOneOpen = false;
-	private boolean tierTwoOpen = false;
 
 	private WheelAdapter tierOneAdapter;
 
-	private View t0, t1, t2, t3, meContextView;
+	private View t0, t1, t3, meContextView, contentLayer, history, popup, loginLayer;
 
 	private TierZeroFragment tierZero;
-
+	private ContentFragment contentFragment;
 	private ThirdLayerBaseFragment thirdLayer;
-	private HistoryLayerFragment historyLayer;
+	private HistoryLayerFragment historyLayerFragment;
+	private BubbleControlFragment controls;
+	private LoginFragment loginFragment;
+	private Animation closePopupAnimation, closeLoginAnimation;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.bubble_layout);
-		cms.fetchBubbles();
 		
 		DisplayMetrics metrics = new DisplayMetrics();
 		Display display = getWindowManager().getDefaultDisplay();
@@ -89,17 +103,23 @@ public class BubbleActivity extends BaseActivity {
 		height = metrics.heightPixels;
 		width = metrics.widthPixels;
 
-		historyLayer = new HistoryLayerFragment();
-		changeFragment(R.id.history_layer, historyLayer);
+		historyLayerFragment = new HistoryLayerFragment();
+		changeFragment(R.id.history_layer, historyLayerFragment);
 
+		loginLayer = findViewById(R.id.login_layer);
+		loginLayer.setVisibility(View.GONE);
 		t0 = findViewById(R.id.tier_zero);
 		t1 = findViewById(R.id.tier_one);
-		t2 = findViewById(R.id.tier_two);
 		t3 = findViewById(R.id.third_layer);
+		t3.setVisibility(View.GONE);
 		meContextView = findViewById(R.id.round_context_list);
+		contentLayer = findViewById(R.id.content_layer);
+		contentLayer.setVisibility(View.GONE);
+		history = findViewById(R.id.history_layer);
+		popup = findViewById(R.id.control_popup);
 
 		meContextAdapter = new MeContextAdapter(this);
-		meContextAdapter.addAll(cms.getBubblesFromCursor(cms.getBubblesAlwaysOnScreen()));
+		meContextAdapter.addAll(cms.getBubblesFromCursor(this, cms.getBubblesAlwaysOnScreen()));
 		meContextAdapter.setBubbleSize((int) getResources().getDimension(R.dimen.tier_two_bubble));
 		meContextFragment = new WheelListFragment();
 		meContextFragment.setTierSize((int) getResources().getDimension(R.dimen.context_round_list));
@@ -116,7 +136,8 @@ public class BubbleActivity extends BaseActivity {
 		seachButton = (ImageView) findViewById(R.id.search_button);
 		searchEdit = (EditText) findViewById(R.id.search_edit);
 		searchGallery = (Gallery) findViewById(R.id.search_bubble_gallery);
-		bcAdapter = new BubbleCursorAdapter(getApplicationContext(), cms.getBubblesWithPriority(0),
+		searchGallery.setOnItemClickListener(onSearchGalleryClick);
+		bcAdapter = new BubbleCursorAdapter(this, cms.getBubblesWithPriority(0),
 				false);
 		bcAdapter.setFilterQueryProvider(filterQuery);
 
@@ -126,14 +147,10 @@ public class BubbleActivity extends BaseActivity {
 			
 			@Override
 			public void onTextChanged(CharSequence s, int start, int before, int count) {
-				// TODO Auto-generated method stub
-				
 			}
 			
 			@Override
 			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-				// TODO Auto-generated method stub
-				
 			}
 			
 			@Override
@@ -148,15 +165,100 @@ public class BubbleActivity extends BaseActivity {
 		searchParams.setMargins(0, 0, -searchParams.width, 0);
 		searchLayout.setLayoutParams(searchParams);
 
-		activeBubbleFragment = new BubbleFragment();
-		
 		root = (ViewGroup) findViewById(R.id.bubble_root);
-		changeFragment(R.id.bubble_root, activeBubbleFragment);
-		// cms.fetchBubbles();
-
 		meBubble = (Button) findViewById(R.id.button_me);
 
+		controls = new BubbleControlFragment();
+		FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+		ft.replace(R.id.control_popup, controls);
+		ft.commit();
+
+		openBubbleFragment();
 	}
+
+	private void openBubbleFragment() {
+		if(activeBubbleFragment == null) {
+			activeBubbleFragment = new BubbleFragment();
+			changeFragment(R.id.bubble_root, activeBubbleFragment);
+
+			if(account.isLoggedIn()) {
+				// set avatar bubble and bubbles linked to it
+				AvatarBubble avatar = new AvatarBubble(BubbleActivity.this,
+						account.getAvatarBubbleCursor());
+				if(avatar.x <= 0 && avatar.y <= 0) {
+					avatar.x = (width / 2);
+					avatar.y = (height / 5);
+				}
+				activeBubbleFragment.addBubble(avatar);
+				activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(account.getFavorites()),
+						BubbleActivity.this);
+			} else {
+				// set login bubble
+				AvatarBubble avatar = new AvatarBubble(this, "");
+				if(avatar.x <= 0 && avatar.y <= 0) {
+					avatar.x = (width / 2);
+					avatar.y = (height / 5);
+				}
+				activeBubbleFragment.addBubble(avatar);
+			}
+		}
+
+		openRootAnimation(null);
+	}
+
+	@Override
+	public void onBackPressed() {
+
+		LayoutParams searchParams = (LayoutParams) searchLayout.getLayoutParams();
+		boolean skipBack = false;
+		if(searchParams.rightMargin == 0) {
+			onSearchClick(null);
+			skipBack = true;
+		}
+		if(contentLayer.getVisibility() == View.VISIBLE) {
+			closeContentView();
+			skipBack = true;
+		}
+		if(t3.getVisibility() == View.VISIBLE) {
+			closeThirdLayer();
+			thirdLayer.clearThirdLayerImages();
+			skipBack = true;
+		}
+		if(!skipBack && tierZero != null && tierZero.getBubbleView() != null) {
+			onMeClick(null);
+			skipBack = true;
+		}
+
+		if(!skipBack) {
+			super.onBackPressed();
+		}
+	}
+
+	private OnItemClickListener onSearchGalleryClick = new OnItemClickListener() {
+
+		@Override
+		public void onItemClick(AdapterView<?> gallery, View view, int position, long id) {
+			toggleSearchKeyboard(true);
+			onSearchClick(null);
+
+			float pivotX = view.getX() / width;
+			float pivotY = 0.1f;
+
+			Animation anim = new ScaleAnimation(0.2f, 1, 0.2f, 1,
+					Animation.RELATIVE_TO_PARENT, pivotX,
+					Animation.RELATIVE_TO_PARENT, pivotY);
+			anim.setDuration(StaticUtils.ANIMATION_DURATION);
+			anim.setInterpolator(new AccelerateInterpolator());
+
+			Cursor c = bcAdapter.getCursor();
+			c.moveToPosition(position);
+			BubbleView bv = new BubbleView(BubbleActivity.this, c);
+
+			meContextAdapter.setSelected(bv);
+			meContextFragment.redraw();
+			setTierZero(bv, anim, true);
+		}
+	};
 
 	@Override
 	protected void onResume() {
@@ -172,21 +274,20 @@ public class BubbleActivity extends BaseActivity {
 	};
 
 	public void onMeClick(final View view) {
+		openBubbleFragment();
+		closeContentView();
+		closeControlPopup();
+		historyLayerFragment.clearHistory();
+
 		meContextAdapter.setSelected(null);
 		meContextFragment.redraw();
 		if(tierZero != null) {
+			tierZero.clear();
 			removeFragment(tierZero);
-			tierZero = null;
 		}
 		if(tierOne != null) {
 			removeFragment(tierOne);
-			tierOne = null;
 		}
-		if(tierTwo != null) {
-			removeFragment(tierTwo);
-			tierTwo = null;
-		}
-
 		// activeBubbleFragment.saveBubbles();
 		// activeBubbleFragment = new BubbleFragment();
 		// activeBubbleFragment.setBubbleCursor(cms.getBubblesInContext(BubbleContexts.PEOPLE),
@@ -196,70 +297,40 @@ public class BubbleActivity extends BaseActivity {
 		// contextAdapter.clear();
 	}
 
-	public void onPeopleClick(View view) {
-		activeBubbleFragment.saveBubbles();
-
-		activeBubbleFragment = new BubbleFragment();
-		activeBubbleFragment.setBubbleCursor(cms.getBubblesInContext(BubbleContexts.PEOPLE), this);
-		animateFragmentChange(view);
-	}
-
-	public void onEventsClick(View view) {
-		activeBubbleFragment.saveBubbles();
-
-		activeBubbleFragment = new BubbleFragment();
-		activeBubbleFragment.setBubbleCursor(cms.getBubblesInContext(BubbleContexts.EVENTS), this);
-		animateFragmentChange(view);
-	}
-
-	private void animateFragmentChange(final View v) {
-		if(closeFragmentAnimation != null) {
-			closeFragmentAnimation.setAnimationListener(new AnimationListener() {
-
-				@Override
-				public void onAnimationStart(Animation animation) {
-				}
-
-				@Override
-				public void onAnimationRepeat(Animation animation) {
-				}
-
-				@Override
-				public void onAnimationEnd(Animation animation) {
-					changeFragment(R.id.bubble_root, activeBubbleFragment);
-					openAnimation(v);
-				}
-			});
-			root.startAnimation(closeFragmentAnimation);
-		} else {
-			changeFragment(R.id.bubble_root, activeBubbleFragment);
-			openAnimation(v);
-		}
-	}
-
-	private void openAnimation(View v) {
+	private void openRootAnimation(View v) {
 //		FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) v.getLayoutParams();
 //		float xPosition = (((float) v.getLeft() + (float) (params.width / 2)) / width);
 //		float yPosition = (((float) v.getTop() + (float) (params.height / 2)) / height);
 		
-		float xPosition = 1f;
+		float xPosition = 0f;
 		float yPosition = 1f;
 
-		final Animation scaleAnim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF,
-				xPosition, Animation.RELATIVE_TO_SELF, yPosition);
+		final Animation scaleAnim = openFromAnimation(xPosition, yPosition);
+
+		root.setVisibility(View.VISIBLE);
+		root.startAnimation(scaleAnim);
+	}
+	
+	private Animation closeToAnimation(float x, float y) {
+		Animation closeAnim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF,
+				x, Animation.RELATIVE_TO_SELF, y);
+		closeAnim.setFillBefore(true);
+		closeAnim.setFillAfter(true);
+		closeAnim.setInterpolator(new ReverseInterpolator());
+		closeAnim.setDuration(StaticUtils.ANIMATION_DURATION);
+		
+		return closeAnim;
+	}
+	
+	private Animation openFromAnimation(float x, float y) {
+		Animation scaleAnim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF,
+				x, Animation.RELATIVE_TO_SELF, y);
 		scaleAnim.setFillBefore(true);
 		scaleAnim.setFillAfter(true);
-		scaleAnim.setInterpolator(new LinearInterpolator());
+		scaleAnim.setInterpolator(new AccelerateInterpolator());
 		scaleAnim.setDuration(StaticUtils.ANIMATION_DURATION);
 		
-		closeFragmentAnimation = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF,
-				xPosition, Animation.RELATIVE_TO_SELF, yPosition);
-		closeFragmentAnimation.setFillBefore(true);
-		closeFragmentAnimation.setFillAfter(true);
-		closeFragmentAnimation.setInterpolator(new ReverseInterpolator());
-		closeFragmentAnimation.setDuration(StaticUtils.ANIMATION_DURATION);
-
-		root.startAnimation(scaleAnim);
+		return scaleAnim;
 	}
 
 	public void onSearchClick(View view) {
@@ -293,9 +364,9 @@ public class BubbleActivity extends BaseActivity {
 		va.start();
 	}
 
-	private void toggleSearchKeyboard(boolean show) {
+	private void toggleSearchKeyboard(boolean hide) {
 		final InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-		if(show) {
+		if(hide) {
 			imm.hideSoftInputFromWindow(searchEdit.getWindowToken(),
 					InputMethodManager.RESULT_UNCHANGED_SHOWN);
 		} else {
@@ -316,6 +387,15 @@ public class BubbleActivity extends BaseActivity {
 		if(searchParams.rightMargin == 0) {
 			onSearchClick(null);
 		}
+
+		if(contentLayer.getVisibility() == View.VISIBLE) {
+			closeContentView();
+		}
+
+		if(t3.getVisibility() == View.VISIBLE) {
+			closeThirdLayer();
+			thirdLayer.clearThirdLayerImages();
+		}
 	}
 
 	public void dropDown(BubbleView bv) {
@@ -323,32 +403,44 @@ public class BubbleActivity extends BaseActivity {
 
 	@Override
 	protected void onDestroy() {
-		activeBubbleFragment.saveBubbles();
+		if(activeBubbleFragment != null) {
+			activeBubbleFragment.saveBubbles();
+		}
 		super.onDestroy();
 	}
 
-	private double distanceFromCenter(View v1, View v2) {
-		float x1 = (v1.getLeft() + (v1.getWidth() / 2));
-		float y1 = (v1.getTop() + (v1.getHeight() / 2));
-		float x2 = (v2.getLeft() + (v2.getWidth() / 2));
-		float y2 = (v2.getTop() + (v2.getHeight() / 2));
+	private AnimationListener hideRootAnimationListener = new AnimationListener() {
 
-		return BubbleFragment.distance(x1, y1, x2, y2);
-	}
-
-	public void setTierZero(BubbleView bv, Animation anim, boolean addToHistory) {
-		if(tierOne != null) {
-			removeFragment(tierOne);
-			tierOne = null;
+		@Override
+		public void onAnimationStart(Animation animation) {
 		}
-		if(tierTwo != null) {
-			removeFragment(tierTwo);
-			tierTwo = null;
+
+		@Override
+		public void onAnimationRepeat(Animation animation) {
+		}
+
+		@Override
+		public void onAnimationEnd(Animation animation) {
+			root.setVisibility(View.GONE);
+			activeBubbleFragment.saveBubbles();
+			removeFragment(activeBubbleFragment);
+			activeBubbleFragment = null;
+		}
+	};
+
+	public void setTierZero(final BubbleView bv, Animation anim, boolean addToHistory) {
+		if(root.getVisibility() == View.VISIBLE) {
+			Animation closeFragmentAnimation = closeToAnimation(0, 1);
+			closeFragmentAnimation.setAnimationListener(hideRootAnimationListener);
+			root.startAnimation(closeFragmentAnimation);
+		}
+		if(contentLayer.getVisibility() == View.VISIBLE) {
+			closeContentView();
 		}
 
 		if(addToHistory && tierZero != null && tierZero.getBubbleView() != null) {
 			float pX = 100;
-			float pY = 1000;
+			float pY = 700;
 
 			Animation animateHistory = new ScaleAnimation(1.5f, 1, 1.5f, 1,
 					Animation.ABSOLUTE, pX,
@@ -356,20 +448,138 @@ public class BubbleActivity extends BaseActivity {
 			animateHistory.setDuration(StaticUtils.ANIMATION_DURATION);
 			animateHistory.setInterpolator(new AccelerateInterpolator());
 
-			historyLayer.addToHistory(tierZero.getBubbleView(), animateHistory);
+			historyLayerFragment.addToHistory(tierZero.getBubbleView(), animateHistory);
 		}
 
 		t0.startAnimation(anim);
 
-		tierZero = new TierZeroFragment();
+		if(tierZero == null) {
+			tierZero = new TierZeroFragment();
+		}
 		tierZero.setBubbleView(bv);
 		changeFragment(R.id.tier_zero, tierZero);
+
+		setTierOne(bv);
+
+		if(closePopupAnimation != null) {
+			closeControlPopup();
+		}
+		popup.postDelayed(new Runnable() {
+
+			@Override
+			public void run() {
+				openControlPopup(bv);
+			}
+		}, StaticUtils.ANIMATION_DURATION);
+	}
+
+
+	public void closeControlPopup() {
+		if(closePopupAnimation != null) {
+			popup.setVisibility(View.GONE);
+			popup.startAnimation(closePopupAnimation);
+			closePopupAnimation = null;
+		}
+	}
+
+	private void openControlPopup(final BubbleView bv) {
+		controls.setAdapter(bv.getControlAdapter(this));
+
+		popup.setVisibility(View.VISIBLE);
+		controls.openMenu(bv);
+		int tZero = (int) getResources().getDimension(R.dimen.tier_zero_controls);
+		controls.setSize(tZero);
+
+		float dx = 0.5f;
+		float dy = 0.5f;
+		final Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, dx,
+				Animation.RELATIVE_TO_SELF, dy);
+		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+		anim.setInterpolator(new LinearInterpolator());
+
+		if(closePopupAnimation != null) {
+			popup.setVisibility(View.GONE);
+			closePopupAnimation.setAnimationListener(new AnimationListener() {
+
+				@Override
+				public void onAnimationStart(Animation animation) {
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation animation) {
+				}
+
+				@Override
+				public void onAnimationEnd(Animation animation) {
+					popup.setVisibility(View.VISIBLE);
+					popup.startAnimation(anim);
+				}
+			});
+			popup.startAnimation(closePopupAnimation);
+			closePopupAnimation = null;
+		} else {
+			popup.startAnimation(anim);
+		}
+
+		closePopupAnimation = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_SELF, dx,
+				Animation.RELATIVE_TO_SELF, dy);
+		closePopupAnimation.setDuration(StaticUtils.ANIMATION_DURATION);
+		closePopupAnimation.setInterpolator(new ReverseInterpolator());
+	}
+
+	private void setContent(final BubbleView bv) {
+		if(contentFragment == null) {
+			contentFragment = new ContentFragment();
+		}
+		if(contentLayer.getVisibility() == View.VISIBLE) {
+			closeContentView();
+			return;
+		}
+		contentLayer.setVisibility(View.VISIBLE);
+		contentFragment.setBubbleView(bv);
+		changeFragment(R.id.content_layer, contentFragment);
+
+		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_PARENT, 0.5f,
+				Animation.RELATIVE_TO_PARENT, 0.7f);
+		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+		anim.setInterpolator(new AccelerateInterpolator());
+		contentLayer.startAnimation(anim);
+	}
+
+	private void closeContentView() {
+		if(contentLayer.getVisibility() != View.VISIBLE) {
+			return;
+		}
+
+		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_PARENT, 0.5f,
+				Animation.RELATIVE_TO_PARENT, 0.7f);
+		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+		anim.setInterpolator(new ReverseInterpolator());
+		anim.setAnimationListener(new AnimationListener() {
+
+			@Override
+			public void onAnimationStart(Animation animation) {
+			}
+
+			@Override
+			public void onAnimationRepeat(Animation animation) {
+			}
+
+			@Override
+			public void onAnimationEnd(Animation animation) {
+				contentLayer.setVisibility(View.GONE);
+			}
+		});
+		contentLayer.startAnimation(anim);
 	}
 
 	public void setTierZeroFromMeContext(View from, BubbleView bv) {
-		tierOne = null;
-		setTierOne(bv);
-
+		if(tierZero != null && tierZero.getBubbleView() != null
+				&& tierZero.getBubbleView().getID().equals(bv.getID())) {
+			// can't open two same bubbles
+			return;
+		}
+		
 		from = (View) from.getParent();
 
 		float rotation = (from.getRotation() / 90);
@@ -377,7 +587,7 @@ public class BubbleActivity extends BaseActivity {
 		float pivotX = (rotation * (size / 2)) / width;
 		float pivotY = 1f - (((1f - rotation) * (size / 2)) / height);
 
-		Animation anim = new ScaleAnimation(0, 1, 0, 1, 
+		Animation anim = new ScaleAnimation(0.1f, 1, 0.1f, 1,
 				Animation.RELATIVE_TO_PARENT, pivotX,
 				Animation.RELATIVE_TO_PARENT, pivotY);
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
@@ -389,32 +599,66 @@ public class BubbleActivity extends BaseActivity {
 	}
 
 	public void setTierOne(BubbleView bv) {
-		if(tierOne != null) {
-			openTierZeroContent();
-			return;
-		}
-		
-		Animation anim = new ScaleAnimation(3, 1, 3, 1);
+		Animation anim = new ScaleAnimation(3, 1, 3, 1, Animation.ABSOLUTE, width / 2,
+				Animation.ABSOLUTE, height / 2);
 		anim.setInterpolator(new LinearInterpolator());
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
-		t1.startAnimation(anim);
 
 		tierOneAdapter = new TierOneAdapter(this);
 		tierOneAdapter.setBubbleSize((int) getResources().getDimension(R.dimen.tier_one_bubble));
-		tierOneAdapter.addAll(cms.getBubbles(bv.getLinks()));
-		tierOne = new WheelListFragment();
+		tierOneAdapter.addAll(cms.getBubbles(this, bv.getLinks()));
+		tierOne = new TierOneWheelListFragment();
 		tierOne.setAdapter(tierOneAdapter);
 		tierOne.setTierSize((int) getResources().getDimension(R.dimen.tier_one));
 		changeFragment(R.id.tier_one, tierOne);
+		t1.startAnimation(anim);
 	}
 
-	private void openTierZeroContent() {
-		Random r = new Random();
-		int count = 1 + r.nextInt(5);
-		for(int i = 0; i < count; i++) {
-			thirdLayer.onImageClick(tierZero.getBubbleView());
+	public void onTierOneClick(View from, BubbleView bv) {
+		from = (View) from.getParent();
+
+		float rotation = from.getRotation();
+
+		// setting rotation from 0 to 180
+		if(rotation <= 90) {
+			rotation += 90;
+		} else if(rotation >= 270) {
+			rotation = rotation - 270;
 		}
+
+		float pivotX = (2f * (rotation / 180f)) - 0.5f;
+		float pivotY = (0.2f);
+
+		if(rotation < 90) {
+			pivotX -= pivotX / 5;
+			pivotY = 0.2f + (1 - (rotation / 90f)) / 15;
+		} else if(rotation > 90) {
+			pivotX += pivotX / 10;
+			pivotY = 0.2f + (1 - ((rotation - 90) / 90f)) / 15;
+		}
+
+//		Log.e(TAG, "rotation: " + rotation + " pivotX: " + pivotX + " pivotY: " + pivotY);
+
+		Animation anim = new ScaleAnimation(0.2f, 1, 0.2f, 1,
+				Animation.RELATIVE_TO_SELF, pivotX,
+				Animation.RELATIVE_TO_SELF, pivotY);
+		anim.setDuration(StaticUtils.ANIMATION_DURATION);
+		anim.setInterpolator(new AccelerateInterpolator());
+
+		setTierZero(bv, anim, true);
+		setTierOne(bv);
 		
+	}
+
+	public void onImageClick(BubbleView bv) {
+		if(t3.getVisibility() == View.VISIBLE) {
+			closeThirdLayer();
+			thirdLayer.clearThirdLayerImages();
+			return;
+		}
+		thirdLayer.onImageClick(bv);
+
+		t3.setVisibility(View.VISIBLE);
 		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_PARENT, 0.5f,
 				Animation.RELATIVE_TO_PARENT, 0.75f);
 		anim.setInterpolator(new AccelerateInterpolator());
@@ -423,47 +667,40 @@ public class BubbleActivity extends BaseActivity {
 		t3.startAnimation(anim);
 	}
 
-	public void onTierOneClick(View from, BubbleView bv) {
-		from = (View) from.getParent();
-
-		float pivotX = (0.5f);
-		float pivotY = (0.2f);
-
-		Animation anim = new ScaleAnimation(0, 1, 0, 1, 
-				Animation.RELATIVE_TO_SELF, pivotX,
-				Animation.RELATIVE_TO_SELF, pivotY);
+	public void closeThirdLayer() {
+		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_PARENT, 0.5f,
+				Animation.RELATIVE_TO_PARENT, 0.75f);
+		anim.setInterpolator(new ReverseInterpolator());
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
-		anim.setInterpolator(new AccelerateInterpolator());
+		anim.setAnimationListener(new AnimationListener() {
 
-		setTierZero(bv, anim, true);
-		tierOne = null;
-		setTierOne(bv);
-		
-		
+			@Override
+			public void onAnimationStart(Animation animation) {
+			}
 
-//		tierOneAdapter.setSelected(bv);
-//		tierOne.redraw();
-//
-//		Animation anim = new ScaleAnimation(3, 1, 3, 1);
-//		anim.setInterpolator(new LinearInterpolator());
-//		anim.setDuration(StaticUtils.ANIMATION_DURATION);
-//		t2.startAnimation(anim);
-//
-//		WheelAdapter tierTwoAdapter = new TierOneAdapter(this);
-//		tierTwoAdapter.setBubbleSize((int) getResources().getDimension(R.dimen.tier_two_bubble));
-//		tierTwoAdapter.addAll(cms.getBubbles(bv.getLinks()));
-//		tierTwo = new WheelListFragment();
-//		tierTwo.setAdapter(tierTwoAdapter);
-//		tierTwo.setTierSize((int) getResources().getDimension(R.dimen.tier_two));
-//		changeFragment(R.id.tier_two, tierTwo);
+			@Override
+			public void onAnimationRepeat(Animation animation) {
+			}
+
+			@Override
+			public void onAnimationEnd(Animation animation) {
+				t3.setVisibility(View.GONE);
+			}
+		});
+
+		t3.startAnimation(anim);
 	}
 
 	@Override
 	public boolean handleMessage(Message msg) {
 
 		switch (SpacifyEvents.values()[msg.what]) {
+			case AVATAR_LOGIN_SUCCESS:
+				closeLoginFragment(null);
+				break;
 			case ALL_BUBBLES_FETCHED:
-				meContextAdapter.addAll(cms.getBubblesFromCursor(cms.getBubblesAlwaysOnScreen()));
+				meContextAdapter.addAll(cms.getBubblesFromCursor(this,
+						cms.getBubblesAlwaysOnScreen()));
 				meContextFragment.redraw();
 				break;
 			default:
@@ -471,6 +708,129 @@ public class BubbleActivity extends BaseActivity {
 		}
 
 		return super.handleMessage(msg);
+	}
+
+	public void openLoginFragment(View bv) {
+		FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) bv.getLayoutParams();
+		float xPosition = (((float) bv.getLeft() + (float) (params.width / 2)) / width);
+		float yPosition = (((float) bv.getTop() + (float) (params.height / 2)) / height);
+		
+		if(loginFragment == null) {
+			loginFragment = new LoginFragment();
+		}
+		changeFragment(R.id.login_layer, loginFragment);
+
+		loginLayer.setVisibility(View.VISIBLE);
+		Log.d(TAG, "Opening Login. x: " + xPosition + " y: " + yPosition);
+		Animation anim = openFromAnimation(xPosition, yPosition);
+		closeLoginAnimation = closeToAnimation(xPosition, yPosition);
+		loginLayer.startAnimation(anim);
+	}
+
+	public void closeLoginFragment(View view) {
+		if(loginLayer.getVisibility() == View.VISIBLE && closeLoginAnimation != null
+				&& loginFragment != null) {
+			closeLoginAnimation.setAnimationListener(new AnimationListener() {
+
+				@Override
+				public void onAnimationStart(Animation animation) {
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation animation) {
+				}
+
+				@Override
+				public void onAnimationEnd(Animation animation) {
+					loginLayer.setVisibility(View.GONE);
+					removeFragment(loginFragment);
+				}
+			});
+
+			loginLayer.startAnimation(closeLoginAnimation);
+			closeLoginAnimation = null;
+		}
+	}
+
+	public void onOpenContentClick(View view) {
+		final Button button = (Button) view;
+		final double minHeight = (int) getResources().getDimension(R.dimen.content_height);
+		final double startHeight = contentLayer.getHeight();
+		final double fullHeight = history.getHeight();
+
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				double startTime = System.currentTimeMillis();
+
+				final LayoutParams params = (LayoutParams) contentLayer.getLayoutParams();
+
+				double pulse = 0;
+				while(pulse <= 1) {
+					double diff = System.currentTimeMillis() - startTime;
+					pulse = (diff / StaticUtils.ANIMATION_DURATION);
+
+					if(startHeight > minHeight) {
+						params.height = (int) ((startHeight * (1d - pulse)) + (minHeight * pulse));
+					} else {
+						params.height = (int) ((startHeight * (1d - pulse)) + (fullHeight * pulse));
+					}
+					contentLayer.post(new Runnable() {
+
+						@Override
+						public void run() {
+							contentLayer.setLayoutParams(params);
+						}
+					});
+					try {
+						Thread.sleep(25);
+					} catch(InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				runOnUiThread(new Runnable() {
+					
+					@Override
+					public void run() {
+						if(startHeight > minHeight) {
+							params.height = (int) minHeight;
+							button.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+									android.R.drawable.arrow_down_float, 0);
+							button.setText(R.string.content_open);
+						} else {
+							params.height = (int) fullHeight;
+							button.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+									android.R.drawable.arrow_up_float, 0);
+							button.setText(R.string.content_close);
+						}
+					}
+				});
+				
+			}
+		}).start();
+	}
+
+	public void onTierZeroClick(View view) {
+		boolean skipOpenContent = false;
+		if(contentLayer.getVisibility() == View.VISIBLE) {
+			closeContentView();
+			skipOpenContent = true;
+		}
+		if(t3.getVisibility() == View.VISIBLE) {
+			closeThirdLayer();
+			thirdLayer.clearThirdLayerImages();
+			skipOpenContent = true;
+		}
+		
+		if(!skipOpenContent && tierZero != null) {
+			BubbleView bv = tierZero.getBubbleView();
+			JSONObject json = bv.getStyleOverrides();
+			if(!TextUtils.isEmpty(bv.getContents()) || (json != null
+					&& StaticUtils.parseStringJSON(json, BubbleJSON.contentsImageUrl, null) != null)) {
+				onImageClick(bv);
+			}
+		}
 	}
 
 }

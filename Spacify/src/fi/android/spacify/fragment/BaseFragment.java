@@ -6,20 +6,20 @@ import android.os.Handler.Callback;
 import android.os.Message;
 import android.support.v4.app.Fragment;
 import android.util.Log;
-import fi.android.service.EventService;
+import fi.qvik.android.util.EventBus;
 import fi.spacify.android.util.SpacifyEvents;
 
 public class BaseFragment extends Fragment implements Callback {
 
 	private final String TAG = "BaseFragment";
-	protected EventService es = EventService.getInstance();
+	protected EventBus eb = EventBus.getInstance();
 	private Handler eventHandler;
 
 	@Override
 	public void onDetach() {
 		super.onDetach();
 		if (eventHandler != null) {
-			es.removeCallback(eventHandler);
+			eb.removeCallback(eventHandler);
 			eventHandler = null;
 		}
 	}
@@ -28,7 +28,7 @@ public class BaseFragment extends Fragment implements Callback {
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
 		if (eventHandler == null) {
-			eventHandler = es.addCallback(this);
+			eventHandler = eb.addCallback(this);
 		}
 	}
 

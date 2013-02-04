@@ -1,13 +1,16 @@
 package fi.android.spacify.view;
 
-import android.content.Context;
+import android.app.Activity;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import fi.android.spacify.R;
+import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.fragment.BubbleFragment;
 import fi.android.spacify.view.BubbleView.BubbleMovement;
 
@@ -19,9 +22,11 @@ public abstract class BaseBubbleView extends FrameLayout {
 	private final int DOUBLE_CLICK_DELAY = 300;
 	
 	protected String id;
+	protected Activity activity;
 	
-	public View bubble;
+	public View bubbleText;
 	public TextView links;
+	protected ImageView background;
 	public int movement = BubbleMovement.INERT;
 	public float diameter = 150;
 	public int x, y;
@@ -29,22 +34,23 @@ public abstract class BaseBubbleView extends FrameLayout {
 	public double moved = 0;
 	public boolean asMainContext = false;
 
-	public BaseBubbleView(Context context) {
-		super(context);
-		LayoutInflater.from(context).inflate(getLayout(), this, true);
-		bubble = findViewById(R.id.base_bubble_bubble);
+	public BaseBubbleView(Activity act) {
+		super(act);
+		this.activity = act;
+		LayoutInflater.from(act).inflate(getLayout(), this, true);
+		background = (ImageView) findViewById(R.id.base_bubble_background);
+		bubbleText = findViewById(R.id.base_bubble_bubble);
 		links = (TextView) findViewById(R.id.base_bubble_link_count);
 
 		setLayoutParams(new LayoutParams(android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-				android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
- Gravity.TOP));
+				android.view.ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP));
 	}
 
 	protected abstract int getLayout();
 
 	protected void setText(String text) {
-		if(bubble instanceof TextView) {
-			((TextView) bubble).setText(text);
+		if(bubbleText != null && bubbleText instanceof TextView) {
+			((TextView) bubbleText).setText(text);
 		}
 	}
 	
@@ -106,12 +112,12 @@ public abstract class BaseBubbleView extends FrameLayout {
 		params.height = d;
 		setLayoutParams(params);
 
-		if(bubble != null) {
-			RelativeLayout.LayoutParams bParams = (RelativeLayout.LayoutParams) bubble
+		if(bubbleText != null) {
+			RelativeLayout.LayoutParams bParams = (RelativeLayout.LayoutParams) bubbleText
 					.getLayoutParams();
 			bParams.width = d;
 			bParams.height = d;
-			bubble.setLayoutParams(bParams);
+			bubbleText.setLayoutParams(bParams);
 		}
 	}
 
@@ -132,6 +138,20 @@ public abstract class BaseBubbleView extends FrameLayout {
 		}
 
 		LayoutParams params = (LayoutParams) getLayoutParams();
+		
+		if(this.x < 0) {
+			this.x = 0;
+		} else if(this.x > BubbleActivity.width) {
+			this.x = BubbleActivity.width - (radius * 2);
+		}
+		if(this.y < 0) {
+			this.y = 0;
+		} else if(this.y > BubbleActivity.height) {
+			this.y = BubbleActivity.height - (radius * 2);
+		}
+		
+		Log.d("BVmove", "move[" + id + "]: x: " + this.x + " y: " + this.y);
+		
 		params.leftMargin = this.x;
 		params.topMargin = this.y;
 		setLayoutParams(params);

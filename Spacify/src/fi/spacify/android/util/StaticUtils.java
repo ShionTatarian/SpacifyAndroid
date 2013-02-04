@@ -11,6 +11,9 @@ public class StaticUtils {
 
 	public static final int ANIMATION_DURATION = 300;
 
+	public static final int IMAGE_MEDIUM = 300;
+	public static final int IMAGE_NORMAL = 600;
+
 	public static String parseStringJSON(JSONObject json, String key, String defValue) {
 		String value = defValue;
 

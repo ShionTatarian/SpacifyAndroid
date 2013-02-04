@@ -4,18 +4,26 @@
     android:layout_height="match_parent" >
 
     <FrameLayout
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+        android:layout_width="@dimen/tier_zero_bubble"
+        android:layout_height="@dimen/tier_zero_bubble"
         android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="150dp" >
+        android:layout_marginBottom="75dp" >
+
+        <ImageView
+            android:id="@+id/tier_zero_background"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter" />
 
         <TextView
             android:id="@+id/zero_text"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@drawable/lightblueball"
+            android:clickable="true"
             android:gravity="center"
-            android:padding="20dp"
+            android:onClick="onTierZeroClick"
+            android:padding="15dp"
+            android:textColor="@android:color/white"
             android:textSize="@dimen/text_huge" />
     </FrameLayout>
 

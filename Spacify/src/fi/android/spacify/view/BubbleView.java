@@ -7,15 +7,20 @@ import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
-import android.content.Context;
+import android.app.Activity;
 import android.database.Cursor;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 import fi.android.spacify.R;
+import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
-import fi.android.spacify.fragment.BubbleFragment;
 import fi.android.spacify.fragment.ControlAdapter;
+import fi.android.spacify.service.AccountService;
+import fi.qvik.android.util.ImageService;
+import fi.spacify.android.util.StaticUtils;
 
 @SuppressWarnings("javadoc")
 public class BubbleView extends BaseBubbleView {
@@ -29,6 +34,7 @@ public class BubbleView extends BaseBubbleView {
 		public static final String priority = "priority";
 		public static final String size = "size";
 		public static final String style = "style";
+		public static final String styleOverrides = "styleOverrides";
 		public static final String title = "title";
 		public static final String contents = "contents";
 		public static final String links = "links";
@@ -36,6 +42,11 @@ public class BubbleView extends BaseBubbleView {
 		public static final String contentsImageUrl = "contentsImageUrl";
 		public static final String context = "context";
 		public static final String alwaysOnScreen = "alwaysOnScreen";
+		public static final String webSiteUrl = "websiteUrl";
+		public static final String thirdLayer = "3rdLayer";
+		public static final String titleFontColor = "titleFontColor";
+		public static final String contentsFontColor = "contentsFontColor";
+
 	}
 
 	public static class BubbleContexts {
@@ -66,19 +77,25 @@ public class BubbleView extends BaseBubbleView {
 
 	public boolean alwaysOnScreen = true;
 
+	private JSONObject styleOverrides;
+
 	private void init() {
 		zoom(1);
 	}
 
-	public BubbleView(Context context, String id) {
-		super(context);
+	public JSONObject getStyleOverrides() {
+		return styleOverrides;
+	}
+
+	public BubbleView(Activity act, String id) {
+		super(act);
 		this.id = id;
 		init();
 	}
 
 
-	public BubbleView(Context context, Cursor c) {
-		super(context);
+	public BubbleView(Activity act, Cursor c) {
+		super(act);
 		super.setLayoutParams(new LayoutParams(100, 100));
 		
 		updateContent(c);
@@ -86,12 +103,18 @@ public class BubbleView extends BaseBubbleView {
 	}
 
 	public void updateContent(Cursor c) {
+		if(c.getCount() == 0) {
+			return;
+		}
 		id = c.getString(c.getColumnIndex(BubbleColumns.ID));
 		title = c.getString(c.getColumnIndex(BubbleColumns.TITLE));
+		if(title.equalsIgnoreCase("null")) {
+			title = "";
+		}
 		setText(title);
 		style = c.getString(c.getColumnIndex(BubbleColumns.STYLE));
 		contents = c.getString(c.getColumnIndex(BubbleColumns.CONTENTS));
-		priority = c.getInt(c.getColumnIndex(BubbleColumns.PRIORITY));
+		priority = c.getInt(c.getColumnIndex(BubbleColumns.SIZE));
 		titleImageUrl = c.getString(c.getColumnIndex(BubbleColumns.TITLE_IMAGE_URL));
 		try {
 			String linksJSON = c.getString(c.getColumnIndex(BubbleColumns.LINKS));
@@ -114,12 +137,41 @@ public class BubbleView extends BaseBubbleView {
 		contentImageUrl = c.getString(c.getColumnIndex(BubbleColumns.CONTENT_IMAGE_URL));
 		latitude = c.getLong(c.getColumnIndex(BubbleColumns.LATITUDE));
 		longitude = c.getLong(c.getColumnIndex(BubbleColumns.LONGITUDE));
+		try {
+			String style = c.getString(c.getColumnIndex(BubbleColumns.STYLE_OVERRIDES));
+			Log.d(TAG, "Style: " + style);
+			if(!TextUtils.isEmpty(style)) {
+				styleOverrides = new JSONObject(style);
+			} else {
+				styleOverrides = new JSONObject();
+			}
+		} catch(JSONException e) {
+			e.printStackTrace();
+		}
 		setAlwaysVisible(c.getInt(c.getColumnIndex(BubbleColumns.ALWAYS_ON_SCREEN)));
 
 		x = c.getInt(c.getColumnIndex(BubbleColumns.X));
 		y = c.getInt(c.getColumnIndex(BubbleColumns.Y));
+		setBackground();
+		move((x + getRadius()), (y + getRadius()), BubbleActivity.width, BubbleActivity.height);
 
 		postInvalidate();
+	}
+
+	private void setBackground() {
+		if(styleOverrides == null) {
+			return;
+		}
+		String imageUrl = null;
+		try {
+			imageUrl = styleOverrides.getString(BubbleJSON.titleImageUrl);
+		} catch(JSONException e) {
+		}
+		if(TextUtils.isEmpty(imageUrl) || background == null) {
+			return;
+		}
+		ImageService.getInstance().assignHelpMethod(activity, background, StaticUtils.IMAGE_MEDIUM,
+				imageUrl, R.drawable.lightblueball, null);
 	}
 
 	@Override
@@ -295,11 +347,38 @@ public class BubbleView extends BaseBubbleView {
 		}
 	}
 
-	public ArrayAdapter<Integer> getControlAdapter(BubbleFragment bf) {
-		ArrayAdapter<Integer> adapter = new ControlAdapter(getContext(), this, bf);
-		adapter.add(ControlAdapter.COMMANDS.TOGGLE_LINKS);
-		adapter.add(ControlAdapter.COMMANDS.IMAGE);
-		adapter.add(ControlAdapter.COMMANDS.VIDEO);
+	public ArrayAdapter<Integer> getControlAdapter(BubbleActivity ba) {
+		ArrayAdapter<Integer> adapter = new ControlAdapter(getContext(), this, ba);
+		if(styleOverrides != null && styleOverrides.has(BubbleJSON.thirdLayer)) {
+			try {
+				JSONObject third = styleOverrides.getJSONObject(BubbleJSON.thirdLayer);
+				if(third.has(BubbleJSON.webSiteUrl)) {
+					adapter.add(ControlAdapter.COMMANDS.WEB);
+				}
+			} catch(JSONException e) {
+			}
+
+		}
+
+		// if(contents != null && contents.length() > 0) {
+		// adapter.add(ControlAdapter.COMMANDS.SHOW_CONTENT);
+		// }
+		if(styleOverrides != null
+				&& StaticUtils.parseStringJSON(styleOverrides, BubbleJSON.contentsImageUrl, null) != null) {
+			adapter.add(ControlAdapter.COMMANDS.IMAGE);
+		}
+		AccountService account = AccountService.getInstance();
+		if(account.isLoggedIn() && !id.equals(account.getAvatarBubbleID())) {
+			adapter.add(ControlAdapter.COMMANDS.FAVORITE);
+		}
+
+		if(account.isLoggedIn() && id.equals(account.getAvatarBubbleID())) {
+			adapter.add(ControlAdapter.COMMANDS.CALL_TO_SCREEN);
+		}
+
+		if(links.size() > 0) {
+			adapter.add(ControlAdapter.COMMANDS.LINK_COUNT);
+		}
 		return adapter;
 	}
 

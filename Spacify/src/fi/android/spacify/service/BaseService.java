@@ -1,9 +1,10 @@
 package fi.android.spacify.service;
 
-import fi.android.service.EventService;
+import fi.qvik.android.util.EventBus;
+
 
 public class BaseService {
 
-	protected EventService es = EventService.getInstance();
+	protected EventBus eb = EventBus.getInstance();
 
 }

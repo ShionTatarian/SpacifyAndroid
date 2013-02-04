@@ -10,7 +10,7 @@
         android:layout_width="@dimen/popup_control"
         android:layout_height="@dimen/popup_control"
         android:layout_centerHorizontal="true"
-        android:background="@drawable/greenball"
+        android:background="@drawable/lightblueball"
         android:padding="@dimen/margin_normal"
         android:scaleType="fitCenter"
         android:visibility="visible" />
@@ -22,6 +22,7 @@
         android:layout_centerHorizontal="true"
         android:gravity="center"
         android:padding="@dimen/margin_normal"
+        android:textColor="@android:color/white"
         android:visibility="visible" />
 
 </RelativeLayout>

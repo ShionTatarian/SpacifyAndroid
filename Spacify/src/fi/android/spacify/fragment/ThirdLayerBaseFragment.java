@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Random;
 
 import android.app.Activity;
-import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
@@ -80,6 +79,13 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 		if(v instanceof BaseBubbleView) {
 			v.bringToFront();
 			bv = (BaseBubbleView) v;
+			int[] pos = bv.getViewPosition();
+			double distance = BubbleFragment.distance(x, y, pos[0], pos[1]);
+			if(distance > (bv.diameter / 1.7d)) {
+				onEmptyClick();
+				return false;
+			}
+
 			if(event.getPointerCount() == 1) {
 				firstTouched = bv;
 			}
@@ -117,16 +123,19 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 				}
 
 				if(firstTouched != null && event.getPointerCount() == 2) {
-					float x1 = event.getX(event.getPointerId(0));
-					float y1 = event.getY(event.getPointerId(0));
-					float x2 = event.getX(event.getPointerId(1));
-					float y2 = event.getY(event.getPointerId(1));
+					try {
+						float x1 = event.getX(event.getPointerId(0));
+						float y1 = event.getY(event.getPointerId(0));
+						float x2 = event.getX(event.getPointerId(1));
+						float y2 = event.getY(event.getPointerId(1));
 
-					double d = distance(x1, y1, x2, y2);
-					if(initialD < 0) {
-						initialD = d;
-					} else {
-						firstTouched.zoom(d / initialD);
+						double d = distance(x1, y1, x2, y2);
+						if(initialD < 0) {
+							initialD = d;
+						} else {
+							firstTouched.zoom(d / initialD);
+						}
+					} catch(IllegalArgumentException e) {
 					}
 				}
 
@@ -387,10 +396,10 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 		return Math.sqrt(dx2 + dy2);
 	}
 
-	public void setBubbleCursor(Cursor c, Context context) {
+	public void setBubbleCursor(Cursor c, Activity act) {
 		c.moveToFirst();
 		while(!c.isAfterLast()) {
-			BubbleView bv = new BubbleView(context, c);
+			BubbleView bv = new BubbleView(act, c);
 			list.put(bv.getID(), bv);
 			c.moveToNext();
 		}
@@ -438,12 +447,23 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 	}
 
 	private void onEmptyClick() {
-		Iterator<ThirdLayer> iterator = thirdLayer.iterator();
-		while(iterator.hasNext()) {
-			ThirdLayer third = iterator.next();
-			frame.removeView(third);
-			iterator.remove();
-		}
+		parentActivity.onEmptyClick();
+	}
+
+	public void clearThirdLayerImages() {
+		Handler handler = new Handler();
+		handler.postDelayed(new Runnable() {
+
+			@Override
+			public void run() {
+				Iterator<ThirdLayer> iterator = thirdLayer.iterator();
+				while(iterator.hasNext()) {
+					ThirdLayer third = iterator.next();
+					frame.removeView(third);
+					iterator.remove();
+				}
+			}
+		}, StaticUtils.ANIMATION_DURATION);
 	}
 
 	public void saveBubbles() {
@@ -456,6 +476,7 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 
 	public void onImageClick(BubbleView bv) {
 		ThirdLayer third = new ThirdLayer(parentActivity);
+		third.setBubble(bv, parentActivity);
 		third.setOnTouchListener(this);
 		frame.addView(third);
 		third.onTouchDown();
@@ -484,6 +505,10 @@ public class ThirdLayerBaseFragment extends BaseFragment implements OnTouchListe
 	public void onEditClick(BubbleView bv) {
 		// TODO Auto-generated method stub
 
+	}
+
+	public void clearImages() {
+		onEmptyClick();
 	}
 
 }

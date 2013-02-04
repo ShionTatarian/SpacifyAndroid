@@ -9,17 +9,18 @@ import org.apache.http.client.methods.HttpGet;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.util.Log;
-import fi.android.service.web.WebJsonListener;
-import fi.android.service.web.WebService;
-import fi.android.service.web.WebServiceException;
 import fi.android.spacify.R;
 import fi.android.spacify.db.BubbleDatabase;
 import fi.android.spacify.view.BubbleView;
+import fi.qvik.service.http.HttpJSONListener;
+import fi.qvik.service.http.QvikException;
+import fi.qvik.service.http.QvikHttpService;
+import fi.qvik.service.http.QvikHttpServiceInterface;
 import fi.spacify.android.util.SpacifyEvents;
-import fi.spacify.android.util.WebPipes;
 
 
 /**
@@ -31,15 +32,15 @@ import fi.spacify.android.util.WebPipes;
 public class ContentManagementService extends BaseService {
 
 	private static final String TAG = "ContentManagementService";
-	private final WebService WEB = WebService.getInstance();
+	private final QvikHttpServiceInterface WEB = QvikHttpService.getInstance();
 	private final BubbleDatabase db = BubbleDatabase.getInstance();
 
 	private static ContentManagementService instance;
 
 	private Context context;
 
-	private ContentManagementService(Context context) {
-		this.context = context;
+	private ContentManagementService(Context ctx) {
+		this.context = ctx;
 
 		// if(getBubblesWithPriority(0).getCount() == 0) {
 		// getBubblesFromAssets();
@@ -69,27 +70,27 @@ public class ContentManagementService extends BaseService {
 			throw new IllegalStateException(TAG + " has already been initialized!");
 		}
 		instance = new ContentManagementService(context);
-		instance.WEB.openPipe(WebPipes.BUBBLE_REQUEST_PIPE);
 	}
 
 	public void fetchBubbles() {
 		HttpGet get = new HttpGet(context.getResources().getString(R.string.url_cms_all_bubbles));
-		WEB.requestJSON(get, bubbleParser, WebPipes.BUBBLE_REQUEST_PIPE);
+		WEB.requestJSON(get, bubbleParser);
 	}
 
-	private WebJsonListener bubbleParser = new WebJsonListener() {
+	private HttpJSONListener bubbleParser = new HttpJSONListener() {
 
 		@Override
-		public void successResult(JSONObject json) {
-			Log.v(TAG, "Got bubbles: " + json);
-			db.storeBubbleJson(json);
-			es.dispatchEvent(SpacifyEvents.ALL_BUBBLES_FETCHED.ordinal());
+		public void handleErrorResponse(QvikException e) {
+			eb.dispatchEvent(SpacifyEvents.BUBBLE_FETCH_FAILED.ordinal());
+			Log.e(TAG, "Problem getting bubbles");
+			e.printStackTrace();
 		}
 
 		@Override
-		public void error(WebServiceException e) {
-			Log.e(TAG, "Problem getting bubbles");
-			e.printStackTrace();
+		public void handleSuccessJsonResponse(JSONObject json) {
+			Log.v(TAG, "Got bubbles: " + json);
+			db.storeBubbleJson(json);
+			eb.dispatchEvent(SpacifyEvents.ALL_BUBBLES_FETCHED.ordinal());
 		}
 	};
 
@@ -98,12 +99,12 @@ public class ContentManagementService extends BaseService {
 	 * 
 	 * @return List of Bubble objects.
 	 */
-	public List<BubbleView> getTopLevelBubbles() {
+	public List<BubbleView> getTopLevelBubbles(Activity act) {
 		Cursor c = db.getTopLevelBubblesCursor();
 		List<BubbleView> bubbles = new ArrayList<BubbleView>();
 		c.moveToFirst();
 		while(!c.isAfterLast()) {
-			bubbles.add(new BubbleView(context, c));
+			bubbles.add(new BubbleView(act, c));
 			c.moveToNext();
 		}
 		c.close();
@@ -123,11 +124,11 @@ public class ContentManagementService extends BaseService {
 		return db.getBubblesInContext(context);
 	}
 
-	public List<BubbleView> getBubblesFromCursor(Cursor c) {
+	public List<BubbleView> getBubblesFromCursor(Activity act, Cursor c) {
 		List<BubbleView> list = new ArrayList<BubbleView>();
 		c.moveToFirst();
 		while(!c.isAfterLast()) {
-			list.add(new BubbleView(context, c));
+			list.add(new BubbleView(act, c));
 			c.moveToNext();
 		}
 		c.close();
@@ -135,12 +136,12 @@ public class ContentManagementService extends BaseService {
 		return list;
 	}
 
-	public List<BubbleView> getBubbles(List<String> links) {
+	public List<BubbleView> getBubbles(Activity act, List<String> links) {
 		Cursor c = db.getLinkedBubblesCursor(links);
 		List<BubbleView> bubbles = new ArrayList<BubbleView>();
 		c.moveToFirst();
 		while(!c.isAfterLast()) {
-			bubbles.add(new BubbleView(context, c));
+			bubbles.add(new BubbleView(act, c));
 			c.moveToNext();
 		}
 		c.close();

@@ -12,13 +12,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
-import fi.android.service.WorkService;
 import fi.android.spacify.R;
 import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.adapter.RoundListAdapter;
 import fi.android.spacify.adapter.RoundListAdapter.ViewHolder;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BubbleView;
+import fi.qvik.android.util.WorkService;
 import fi.spacify.android.util.BaseSettings;
 import fi.spacify.android.util.StaticUtils;
 
