@@ -363,16 +363,16 @@ public class BubbleView extends BaseBubbleView {
 		// if(contents != null && contents.length() > 0) {
 		// adapter.add(ControlAdapter.COMMANDS.SHOW_CONTENT);
 		// }
-		if(styleOverrides != null
-				&& StaticUtils.parseStringJSON(styleOverrides, BubbleJSON.contentsImageUrl, null) != null) {
-			adapter.add(ControlAdapter.COMMANDS.IMAGE);
-		}
+//		if(styleOverrides != null
+//				&& StaticUtils.parseStringJSON(styleOverrides, BubbleJSON.contentsImageUrl, null) != null) {
+//			adapter.add(ControlAdapter.COMMANDS.IMAGE);
+//		}
 		AccountService account = AccountService.getInstance();
-		if(account.isLoggedIn() && !id.equals(account.getAvatarBubbleID())) {
+		if(account.isLoggedIn() && !(this instanceof AvatarBubble)) {
 			adapter.add(ControlAdapter.COMMANDS.FAVORITE);
 		}
 
-		if(account.isLoggedIn() && id.equals(account.getAvatarBubbleID())) {
+		if(account.isLoggedIn() && this instanceof AvatarBubble) {
 			adapter.add(ControlAdapter.COMMANDS.CALL_TO_SCREEN);
 		}
 

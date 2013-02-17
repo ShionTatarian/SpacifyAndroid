@@ -123,7 +123,7 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 
 		@Override
 		public void onClick(View v) {
-			account.callToScreen();
+			act.openCallToScreenPopup(v);
 		}
 	};
 

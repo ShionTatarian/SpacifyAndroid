@@ -8,7 +8,6 @@ import org.json.JSONObject;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -145,7 +144,7 @@ public class HistoryLayerFragment extends BaseFragment implements OnTouchListene
 		
 		double disMiddle = BubbleFragment.distance(pos[0], pos[1], BubbleActivity.width/2, BubbleActivity.height/2);
 		double disBottom = BubbleFragment.distance(pos[0], pos[1], BubbleActivity.width, BubbleActivity.height)-100;
-		Log.e(TAG, "disMid: " + disMiddle + ", disBot: " + disBottom + "");
+		// Log.d(TAG, "disMid: " + disMiddle + ", disBot: " + disBottom + "");
 		
 		BubbleView bv = history.get(history.size() - 1);
 		if(disMiddle > disBottom) {

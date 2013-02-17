@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.RelativeLayout.LayoutParams;
 import fi.android.spacify.R;
 import fi.android.spacify.view.BubbleView;
 
@@ -36,8 +35,10 @@ public class BubbleControlFragment extends BaseFragment {
 		params.width = size;
 		layout.setLayoutParams(params);
 
-		for(int i = 0; i < adapter.getCount(); i++) {
-			View v = adapter.getView(i, null, layout);
+		// position offset
+		int POS = 1;
+		for(int i = POS; i < adapter.getCount() + POS; i++) {
+			View v = adapter.getView(i - POS, null, layout);
 			v.setRotation((int) (i * angle));
 			layout.addView(v);
 			views.add(v);

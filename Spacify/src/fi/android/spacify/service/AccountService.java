@@ -103,6 +103,7 @@ public class AccountService extends BaseService {
 
 			@Override
 			public void handleSuccessJsonResponse(JSONObject jsonResponse) {
+				Log.d(TAG, "Login response: " + jsonResponse);
 				if(StaticUtils.parseBooleanJSON(jsonResponse, "success", false)) {
 					setFirstName(StaticUtils.parseStringJSON(jsonResponse, "firstName", null));
 					setLastName(StaticUtils.parseStringJSON(jsonResponse, "lastName", null));
@@ -168,16 +169,16 @@ public class AccountService extends BaseService {
 		} catch(JSONException e) {
 		}
 
-		HttpPost callToScreenPost = new HttpPost(context.getString(R.string.url_toggle_favorite));
+		HttpPost addToFavoritesPost = new HttpPost(context.getString(R.string.url_toggle_favorite));
 
 		List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>();
 		nameValuePairs.add(new BasicNameValuePair("json", avatarJSON.toString()));
 		try {
-			callToScreenPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+			addToFavoritesPost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 		} catch(UnsupportedEncodingException e) {
 			Log.w(TAG, "Could not set Entity name value pairs.", e);
 		}
-		web.requestJSON(callToScreenPost, new HttpJSONListener() {
+		web.requestJSON(addToFavoritesPost, new HttpJSONListener() {
 
 			@Override
 			public void handleErrorResponse(QvikException exception) {
@@ -234,7 +235,7 @@ public class AccountService extends BaseService {
 		return links;
 	}
 
-	public void callToScreen() {
+	public void callToScreen(double x, double y) {
 		if(TextUtils.isEmpty(userNick)) {
 			return;
 		}
@@ -242,6 +243,8 @@ public class AccountService extends BaseService {
 		try {
 			avatarJSON.put("nick", userNick);
 			avatarJSON.put("showAvatar", true);
+			avatarJSON.put("relX", x);
+			avatarJSON.put("relY", y);
 		} catch(JSONException e) {
 		}
 

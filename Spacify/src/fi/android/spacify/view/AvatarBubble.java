@@ -16,8 +16,8 @@ public class AvatarBubble extends BubbleView {
 		super(activity, c);
 		spinner = findViewById(R.id.base_bubble_spinner);
 
-		zoom(2);
-		diameter = 300;
+		zoom(1.5d);
+		diameter = 225;
 	}
 
 	public AvatarBubble(Activity activity, String id) {
@@ -25,8 +25,8 @@ public class AvatarBubble extends BubbleView {
 		spinner = findViewById(R.id.base_bubble_spinner);
 		setText(activity.getString(R.string.login_login_button));
 
-		zoom(2);
-		diameter = 300;
+		zoom(1.5d);
+		diameter = 225;
 	}
 
 	public void showSpinner(boolean show) {

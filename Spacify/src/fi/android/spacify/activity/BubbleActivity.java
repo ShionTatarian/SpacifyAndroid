@@ -40,6 +40,7 @@ import fi.android.spacify.adapter.WheelAdapter;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.fragment.BubbleControlFragment;
 import fi.android.spacify.fragment.BubbleFragment;
+import fi.android.spacify.fragment.CallToScreenFragment;
 import fi.android.spacify.fragment.ContentFragment;
 import fi.android.spacify.fragment.HistoryLayerFragment;
 import fi.android.spacify.fragment.LoginFragment;
@@ -52,6 +53,7 @@ import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.AvatarBubble;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.BubbleView.BubbleJSON;
+import fi.qvik.android.util.ImageCache;
 import fi.spacify.android.util.SpacifyEvents;
 import fi.spacify.android.util.StaticUtils;
 
@@ -82,7 +84,7 @@ public class BubbleActivity extends BaseActivity {
 
 	private WheelAdapter tierOneAdapter;
 
-	private View t0, t1, t3, meContextView, contentLayer, history, popup, loginLayer;
+	private View t0, t1, t3, meContextView, contentLayer, history, popup, extraPopupFragment;
 
 	private TierZeroFragment tierZero;
 	private ContentFragment contentFragment;
@@ -106,8 +108,8 @@ public class BubbleActivity extends BaseActivity {
 		historyLayerFragment = new HistoryLayerFragment();
 		changeFragment(R.id.history_layer, historyLayerFragment);
 
-		loginLayer = findViewById(R.id.login_layer);
-		loginLayer.setVisibility(View.GONE);
+		extraPopupFragment = findViewById(R.id.login_layer);
+		extraPopupFragment.setVisibility(View.GONE);
 		t0 = findViewById(R.id.tier_zero);
 		t1 = findViewById(R.id.tier_one);
 		t3 = findViewById(R.id.third_layer);
@@ -192,6 +194,8 @@ public class BubbleActivity extends BaseActivity {
 				activeBubbleFragment.addBubble(avatar);
 				activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(account.getFavorites()),
 						BubbleActivity.this);
+				activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(avatar.getLinks()),
+						BubbleActivity.this);
 			} else {
 				// set login bubble
 				AvatarBubble avatar = new AvatarBubble(this, "");
@@ -208,30 +212,36 @@ public class BubbleActivity extends BaseActivity {
 
 	@Override
 	public void onBackPressed() {
+		boolean skipBack = anythingOpen();
 
+		if(skipBack) {
+			onMeClick(null);
+		} else {
+			ImageCache.getInstance().clearCache();
+			super.onBackPressed();
+		}
+	}
+
+	private boolean anythingOpen() {
 		LayoutParams searchParams = (LayoutParams) searchLayout.getLayoutParams();
-		boolean skipBack = false;
+		boolean anythingOpen = false;
 		if(searchParams.rightMargin == 0) {
 			onSearchClick(null);
-			skipBack = true;
+			anythingOpen = true;
 		}
 		if(contentLayer.getVisibility() == View.VISIBLE) {
 			closeContentView();
-			skipBack = true;
+			anythingOpen = true;
 		}
 		if(t3.getVisibility() == View.VISIBLE) {
 			closeThirdLayer();
 			thirdLayer.clearThirdLayerImages();
-			skipBack = true;
+			anythingOpen = true;
 		}
-		if(!skipBack && tierZero != null && tierZero.getBubbleView() != null) {
-			onMeClick(null);
-			skipBack = true;
+		if(!anythingOpen && tierZero != null && tierZero.getBubbleView() != null) {
+			anythingOpen = true;
 		}
-
-		if(!skipBack) {
-			super.onBackPressed();
-		}
+		return anythingOpen;
 	}
 
 	private OnItemClickListener onSearchGalleryClick = new OnItemClickListener() {
@@ -274,6 +284,10 @@ public class BubbleActivity extends BaseActivity {
 	};
 
 	public void onMeClick(final View view) {
+		if(!anythingOpen()) {
+			return;
+		}
+
 		openBubbleFragment();
 		closeContentView();
 		closeControlPopup();
@@ -439,10 +453,10 @@ public class BubbleActivity extends BaseActivity {
 		}
 
 		if(addToHistory && tierZero != null && tierZero.getBubbleView() != null) {
-			float pX = 100;
-			float pY = 700;
+			float pX = 50;
+			float pY = 550;
 
-			Animation animateHistory = new ScaleAnimation(1.5f, 1, 1.5f, 1,
+			Animation animateHistory = new ScaleAnimation(1.4f, 1, 1.4f, 1,
 					Animation.ABSOLUTE, pX,
 					Animation.ABSOLUTE, pY);
 			animateHistory.setDuration(StaticUtils.ANIMATION_DURATION);
@@ -631,15 +645,15 @@ public class BubbleActivity extends BaseActivity {
 
 		if(rotation < 90) {
 			pivotX -= pivotX / 5;
-			pivotY = 0.2f + (1 - (rotation / 90f)) / 15;
+			pivotY = pivotY + (1 - (rotation / 90f)) / 15;
 		} else if(rotation > 90) {
 			pivotX += pivotX / 10;
-			pivotY = 0.2f + (1 - ((rotation - 90) / 90f)) / 15;
+			pivotY = pivotY + (1 - ((rotation - 90) / 90f)) / 15;
 		}
 
 //		Log.e(TAG, "rotation: " + rotation + " pivotX: " + pivotX + " pivotY: " + pivotY);
 
-		Animation anim = new ScaleAnimation(0.2f, 1, 0.2f, 1,
+		Animation anim = new ScaleAnimation(0.4f, 1, 0.4f, 1,
 				Animation.RELATIVE_TO_SELF, pivotX,
 				Animation.RELATIVE_TO_SELF, pivotY);
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
@@ -710,6 +724,27 @@ public class BubbleActivity extends BaseActivity {
 		return super.handleMessage(msg);
 	}
 
+	public void onCallToScreenClick(View v) {
+
+		double y = 1;
+		double x = 0;
+		switch (v.getId()) {
+			case R.id.call_bubble_to_left:
+				x = 0.1;
+				break;
+			case R.id.call_bubble_to_right:
+				x = 0.5;
+				break;
+			default:
+			case R.id.call_bubble_to_center:
+				x = 0.9;
+				break;
+		}
+
+		account.callToScreen(x, y);
+
+	}
+
 	public void openLoginFragment(View bv) {
 		FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) bv.getLayoutParams();
 		float xPosition = (((float) bv.getLeft() + (float) (params.width / 2)) / width);
@@ -720,15 +755,15 @@ public class BubbleActivity extends BaseActivity {
 		}
 		changeFragment(R.id.login_layer, loginFragment);
 
-		loginLayer.setVisibility(View.VISIBLE);
+		extraPopupFragment.setVisibility(View.VISIBLE);
 		Log.d(TAG, "Opening Login. x: " + xPosition + " y: " + yPosition);
 		Animation anim = openFromAnimation(xPosition, yPosition);
 		closeLoginAnimation = closeToAnimation(xPosition, yPosition);
-		loginLayer.startAnimation(anim);
+		extraPopupFragment.startAnimation(anim);
 	}
 
 	public void closeLoginFragment(View view) {
-		if(loginLayer.getVisibility() == View.VISIBLE && closeLoginAnimation != null
+		if(extraPopupFragment.getVisibility() == View.VISIBLE && closeLoginAnimation != null
 				&& loginFragment != null) {
 			closeLoginAnimation.setAnimationListener(new AnimationListener() {
 
@@ -742,12 +777,12 @@ public class BubbleActivity extends BaseActivity {
 
 				@Override
 				public void onAnimationEnd(Animation animation) {
-					loginLayer.setVisibility(View.GONE);
+					extraPopupFragment.setVisibility(View.GONE);
 					removeFragment(loginFragment);
 				}
 			});
 
-			loginLayer.startAnimation(closeLoginAnimation);
+			extraPopupFragment.startAnimation(closeLoginAnimation);
 			closeLoginAnimation = null;
 		}
 	}
@@ -831,6 +866,20 @@ public class BubbleActivity extends BaseActivity {
 				onImageClick(bv);
 			}
 		}
+	}
+
+	public void openCallToScreenPopup(View v) {
+		FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) v.getLayoutParams();
+		float xPosition = ((v.getX() + (params.width / 2)) / width);
+		float yPosition = ((v.getY() + (params.height / 2)) / height);
+
+		changeFragment(R.id.login_layer, new CallToScreenFragment());
+
+		extraPopupFragment.setVisibility(View.VISIBLE);
+		Log.d(TAG, "Opening call to screen. x: " + xPosition + " y: " + yPosition);
+		Animation anim = openFromAnimation(xPosition, yPosition);
+		closeLoginAnimation = closeToAnimation(xPosition, yPosition);
+		extraPopupFragment.startAnimation(anim);
 	}
 
 }

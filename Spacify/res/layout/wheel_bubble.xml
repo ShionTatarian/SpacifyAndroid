@@ -35,7 +35,7 @@
             android:layout_height="@dimen/tier_one_bubble"
             android:layout_margin="@dimen/margin_double"
             android:gravity="center"
-            android:padding="@dimen/margin_normal"
+            android:padding="10dp"
             android:textColor="@android:color/white"
             android:textSize="10dp"
             android:visibility="visible" />

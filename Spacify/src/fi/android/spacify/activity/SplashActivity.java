@@ -70,6 +70,7 @@ public class SplashActivity extends BaseActivity implements ImageServiceEventLis
 
 		@Override
 		public void run() {
+			is.setEventListener(null);
 			Intent intent = new Intent(SplashActivity.this, BubbleActivity.class);
 			startActivity(intent);
 			finish();
@@ -102,9 +103,7 @@ public class SplashActivity extends BaseActivity implements ImageServiceEventLis
 
 						ImageView imageView = new ImageView(getApplicationContext());
 						if(!TextUtils.isEmpty(imageUrl) && !is.hasImage(imageUrl)) {
-							is.assignHelpMethod(SplashActivity.this, imageView,
-									StaticUtils.IMAGE_NORMAL, imageUrl, imageUrl,
-									R.drawable.transparentball, null, false);
+							is.loadImage(imageUrl, imageUrl, StaticUtils.IMAGE_NORMAL, null, null);
 						}
 					}
 				}

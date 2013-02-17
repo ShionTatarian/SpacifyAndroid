@@ -32,7 +32,7 @@ public class SpacifyApplication extends Application {
 		images.mkdirs();
 		ImageService.init(images, QvikHttpService.getInstance());
 		ImageService.getInstance().setDebug(true);
-		ImageService.getInstance().useImageCache(true, 15);
+		ImageService.getInstance().useImageCache(true, 10);
 		
 		super.onCreate();
 	}
