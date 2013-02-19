@@ -721,20 +721,25 @@ public class BubbleActivity extends BaseActivity {
 
 		double y = 1;
 		double x = 0;
+		boolean show = true;
+
 		switch (v.getId()) {
-		case R.id.call_bubble_to_left:
-			x = 0.1;
-			break;
-		case R.id.call_bubble_to_center:
-			x = 0.5;
-			break;
-		default:
-		case R.id.call_bubble_to_right:
-			x = 0.9;
-			break;
+			case R.id.call_bubble_to_left:
+				x = 0.1;
+				break;
+			case R.id.call_bubble_to_center:
+				x = 0.5;
+				break;
+			default:
+			case R.id.call_bubble_to_right:
+				x = 0.9;
+				break;
+			case R.id.call_bubble_off_screen:
+				show = false;
+				break;
 		}
 
-		account.callToScreen(x, y);
+		account.callToScreen(x, y, show);
 		closeLoginFragment(null);
 
 	}

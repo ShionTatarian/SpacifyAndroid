@@ -237,14 +237,14 @@ public class AccountService extends BaseService {
 		return links;
 	}
 
-	public void callToScreen(double x, double y) {
+	public void callToScreen(double x, double y, boolean show) {
 		if(TextUtils.isEmpty(userNick)) {
 			return;
 		}
 		JSONObject avatarJSON = new JSONObject();
 		try {
 			avatarJSON.put("nick", userNick);
-			avatarJSON.put("showAvatar", true);
+			avatarJSON.put("showAvatar", show);
 			avatarJSON.put("relX", "" + x);
 			avatarJSON.put("relY", "" + y);
 		} catch(JSONException e) {
