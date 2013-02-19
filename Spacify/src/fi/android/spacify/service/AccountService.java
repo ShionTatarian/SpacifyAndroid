@@ -105,6 +105,8 @@ public class AccountService extends BaseService {
 			public void handleSuccessJsonResponse(JSONObject jsonResponse) {
 				Log.d(TAG, "Login response: " + jsonResponse);
 				if(StaticUtils.parseBooleanJSON(jsonResponse, "success", false)) {
+					userNick = nick;
+					settings.storeString(Preferences.USER_NICK, userNick);
 					setFirstName(StaticUtils.parseStringJSON(jsonResponse, "firstName", null));
 					setLastName(StaticUtils.parseStringJSON(jsonResponse, "lastName", null));
 					setAvatarBubble(StaticUtils.parseStringJSON(jsonResponse, "bubbleId", null));
@@ -243,8 +245,8 @@ public class AccountService extends BaseService {
 		try {
 			avatarJSON.put("nick", userNick);
 			avatarJSON.put("showAvatar", true);
-			avatarJSON.put("relX", x);
-			avatarJSON.put("relY", y);
+			avatarJSON.put("relX", "" + x);
+			avatarJSON.put("relY", "" + y);
 		} catch(JSONException e) {
 		}
 
@@ -260,11 +262,13 @@ public class AccountService extends BaseService {
 		web.requestJSON(callToScreenPost, new HttpJSONListener() {
 
 			@Override
-			public void handleErrorResponse(QvikException exception) {
+			public void handleErrorResponse(QvikException e) {
+				Log.w(TAG, "CallToScreen failed!", e);
 			}
 
 			@Override
 			public void handleSuccessJsonResponse(JSONObject jsonResponse) {
+				Log.d(TAG, "CallToScreenSuccess: " + jsonResponse);
 			}
 		});
 	}

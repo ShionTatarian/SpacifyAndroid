@@ -36,6 +36,7 @@ public class BubbleView extends BaseBubbleView {
 		public static final String style = "style";
 		public static final String styleOverrides = "styleOverrides";
 		public static final String title = "title";
+		public static final String name = "name";
 		public static final String contents = "contents";
 		public static final String links = "links";
 		public static final String titleImageUrl = "titleImageUrl";

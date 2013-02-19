@@ -10,7 +10,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.ImageView;
 import fi.android.spacify.R;
 import fi.android.spacify.db.BubbleDatabase;
 import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
@@ -101,21 +100,20 @@ public class SplashActivity extends BaseActivity implements ImageServiceEventLis
 						String imageUrl = StaticUtils.parseStringJSON(styleOverrides,
 								BubbleJSON.titleImageUrl, null);
 
-						ImageView imageView = new ImageView(getApplicationContext());
 						if(!TextUtils.isEmpty(imageUrl) && !is.hasImage(imageUrl)) {
 							is.loadImage(imageUrl, imageUrl, StaticUtils.IMAGE_NORMAL, null, null);
 						}
 					}
 				}
 
-				openBubbleActivityWithDelay(5000);
+				openBubbleActivityWithDelay(2000);
 			}
 		});
 	}
 
 	@Override
 	public void allImagesReady() {
-		openBubbleActivityWithDelay(5000);
+		openBubbleActivityWithDelay(2000);
 	}
 
 	@Override

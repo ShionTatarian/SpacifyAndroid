@@ -35,7 +35,6 @@ import fi.android.spacify.view.BaseBubbleView;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.ConnectionLayout;
 import fi.android.spacify.view.ThirdLayer;
-import fi.qvik.android.util.WorkService;
 import fi.spacify.android.util.SpacifyEvents;
 import fi.spacify.android.util.StaticUtils;
 
@@ -153,25 +152,19 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	public boolean handleMessage(Message msg) {
 
 		switch (SpacifyEvents.values()[msg.what]) {
-			case AVATAR_LOGIN_SUCCESS:
-				WorkService.getInstance().postWork(new Runnable() {
-					
-					@Override
-					public void run() {
-						avatar.updateContent(account.getAvatarBubbleCursor());
-						setBubbleCursor(cms.getBubblesCursor(avatar.getLinks()), parentActivity, avatar);
-					}
-				});
-			case AVATAR_LOGIN_FAIL:
-				avatar.showSpinner(false);
-				break;
-			case AVATAR_LOGIN_STARTED:
-				avatar.showSpinner(true);
-				break;
-			case ALL_BUBBLES_FETCHED:
-				return true;
-			default:
-				break;
+		case AVATAR_LOGIN_SUCCESS:
+			avatar.updateContent(account.getAvatarBubbleCursor());
+			setBubbleCursor(cms.getBubblesCursor(avatar.getLinks()), parentActivity, avatar);
+		case AVATAR_LOGIN_FAIL:
+			avatar.showSpinner(false);
+			break;
+		case AVATAR_LOGIN_STARTED:
+			avatar.showSpinner(true);
+			break;
+		case ALL_BUBBLES_FETCHED:
+			return true;
+		default:
+			break;
 		}
 
 		return super.handleMessage(msg);
