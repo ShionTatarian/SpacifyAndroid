@@ -40,15 +40,11 @@ public class AccountService extends BaseService {
 	private List<String> favorites = new ArrayList<String>();
 	private static AccountService instance;
 	private String userNick = null;
-	private String userFirstName = null;
-	private String userLastName = null;
 	private String avatarBubbleID = null;
 
 	private AccountService(Context ctx) {
 		context = ctx;
 		userNick = settings.loadString(Preferences.USER_NICK, null);
-		userFirstName = settings.loadString(Preferences.USER_FIRST_NAME, null);
-		userLastName = settings.loadString(Preferences.USER_LAST_NAME, null);
 		avatarBubbleID = settings.loadString(Preferences.AVATAR_ID, null);
 
 		loadAvatarLinks();
@@ -107,8 +103,6 @@ public class AccountService extends BaseService {
 				if(StaticUtils.parseBooleanJSON(jsonResponse, "success", false)) {
 					userNick = nick;
 					settings.storeString(Preferences.USER_NICK, userNick);
-					setFirstName(StaticUtils.parseStringJSON(jsonResponse, "firstName", null));
-					setLastName(StaticUtils.parseStringJSON(jsonResponse, "lastName", null));
 					setAvatarBubble(StaticUtils.parseStringJSON(jsonResponse, "bubbleId", null));
 
 					eb.dispatchEvent(SpacifyEvents.AVATAR_LOGIN_SUCCESS.ordinal());
@@ -121,19 +115,17 @@ public class AccountService extends BaseService {
 
 	}
 
+	public void logout() {
+		userNick = null;
+		avatarBubbleID = null;
+		favorites.clear();
+		storeFavorites();
+
+	}
+
 	private void setAvatarBubble(String avatarID) {
 		settings.storeString(Preferences.AVATAR_ID, avatarID);
 		this.avatarBubbleID = avatarID;
-	}
-
-	private void setLastName(String lastName) {
-		settings.storeString(Preferences.USER_LAST_NAME, lastName);
-		this.userLastName = lastName;
-	}
-
-	private void setFirstName(String firstName) {
-		settings.storeString(Preferences.USER_FIRST_NAME, firstName);
-		this.userFirstName = firstName;
 	}
 
 	public Cursor getAvatarBubbleCursor() {
@@ -153,7 +145,7 @@ public class AccountService extends BaseService {
 			sendServerFavouriteToggle(bv.getID(), true);
 		}
 
-		storeFavoritesToDatabase();
+		storeFavorites();
 	}
 
 	private void sendServerFavouriteToggle(String id, boolean addLink) {
@@ -193,14 +185,14 @@ public class AccountService extends BaseService {
 
 	}
 
-	public void storeFavoritesToDatabase() {
+	public void storeFavorites() {
 		JSONArray avatarLinks = new JSONArray();
 		for(String link : favorites) {
 			avatarLinks.put(link);
 		}
 
 		settings.storeString(Preferences.USER_FAVORITES, avatarLinks.toString());
-		db.updateAvatarLink(avatarBubbleID, avatarLinks);
+		// db.updateAvatarLink(avatarBubbleID, avatarLinks);
 	}
 
 	public boolean isFavorite(BubbleView bv) {

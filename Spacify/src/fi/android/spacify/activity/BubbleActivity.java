@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Message;
@@ -215,7 +216,13 @@ public class BubbleActivity extends BaseActivity {
 			onMeClick(null);
 		} else {
 			ImageCache.getInstance().clearCache();
-			super.onBackPressed();
+
+			// Go to Home screen instead of closing the app. App crashes on
+			// every other startup on OOM error :(
+			Intent i = new Intent(Intent.ACTION_MAIN);
+			i.addCategory(Intent.CATEGORY_HOME);
+			startActivity(i);
+			// super.onBackPressed();
 		}
 	}
 

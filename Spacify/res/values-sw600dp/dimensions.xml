@@ -10,11 +10,11 @@
     <!-- Popup -->
     <dimen name="popup_height">200dp</dimen>
     <dimen name="popup_control_width">200dp</dimen>
-    <dimen name="popup_control_image_size">30dp</dimen>
-    <dimen name="popup_control">50dp</dimen>
+    <dimen name="popup_control_image_size">40dp</dimen>
+    <dimen name="popup_control">60dp</dimen>
 
     <!-- BubbleSurface -->
-    <dimen name="command_circle">80dp</dimen>
+    <dimen name="command_circle">100dp</dimen>
 
     <!-- Search -->
     <dimen name="search_box_height">120dp</dimen>
@@ -28,7 +28,7 @@
     <dimen name="context_me_side">50dp</dimen>
 
     <!-- Tiers -->
-    <dimen name="tier_zero_controls">240dp</dimen>
+    <dimen name="tier_zero_controls">250dp</dimen>
     <dimen name="tier_zero_bubble">150dp</dimen>
     <dimen name="tier_one">900dp</dimen>
     <dimen name="tier_one_offset">-400dp</dimen>

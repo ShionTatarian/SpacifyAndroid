@@ -49,7 +49,7 @@ public class SplashActivity extends BaseActivity implements ImageServiceEventLis
 		switch (SpacifyEvents.values()[msg.what]) {
 			case BUBBLE_FETCH_FAILED:
 			case ALL_BUBBLES_FETCHED:
-				AccountService.getInstance().storeFavoritesToDatabase();
+				AccountService.getInstance().storeFavorites();
 				loadImages();
 				// openBubbleActivityWithDelay(1000);
 				break;
@@ -106,14 +106,14 @@ public class SplashActivity extends BaseActivity implements ImageServiceEventLis
 					}
 				}
 
-				openBubbleActivityWithDelay(2000);
+				openBubbleActivityWithDelay(3000);
 			}
 		});
 	}
 
 	@Override
 	public void allImagesReady() {
-		openBubbleActivityWithDelay(2000);
+		openBubbleActivityWithDelay(3000);
 	}
 
 	@Override

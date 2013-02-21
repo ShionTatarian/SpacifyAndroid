@@ -22,4 +22,10 @@
     <!-- Command bubbles -->
     <string name="web_command_bubble">www</string>
 
+    <!-- Logout -->
+    <string name="logout">Logout</string>
+    <string name="logout_are_you_sure">Do you want to logout?</string>
+    <string name="logout_ok">OK</string>
+    <string name="logout_cancel">Cancel</string>
+
 </resources>

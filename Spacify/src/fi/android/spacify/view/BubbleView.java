@@ -375,6 +375,7 @@ public class BubbleView extends BaseBubbleView {
 
 		if(account.isLoggedIn() && this instanceof AvatarBubble) {
 			adapter.add(ControlAdapter.COMMANDS.CALL_TO_SCREEN);
+			adapter.add(ControlAdapter.COMMANDS.LOGOUT);
 		}
 
 		if(links.size() > 0) {

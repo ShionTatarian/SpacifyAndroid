@@ -152,19 +152,20 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	public boolean handleMessage(Message msg) {
 
 		switch (SpacifyEvents.values()[msg.what]) {
-		case AVATAR_LOGIN_SUCCESS:
-			avatar.updateContent(account.getAvatarBubbleCursor());
-			setBubbleCursor(cms.getBubblesCursor(avatar.getLinks()), parentActivity, avatar);
-		case AVATAR_LOGIN_FAIL:
-			avatar.showSpinner(false);
-			break;
-		case AVATAR_LOGIN_STARTED:
-			avatar.showSpinner(true);
-			break;
-		case ALL_BUBBLES_FETCHED:
-			return true;
-		default:
-			break;
+			case AVATAR_LOGIN_SUCCESS:
+				avatar.updateContent(account.getAvatarBubbleCursor());
+				list.put(avatar.getID(), avatar);
+				setBubbleCursor(cms.getBubblesCursor(avatar.getLinks()), parentActivity, avatar);
+			case AVATAR_LOGIN_FAIL:
+				avatar.showSpinner(false);
+				break;
+			case AVATAR_LOGIN_STARTED:
+				avatar.showSpinner(true);
+				break;
+			case ALL_BUBBLES_FETCHED:
+				return true;
+			default:
+				break;
 		}
 
 		return super.handleMessage(msg);
@@ -287,7 +288,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	public void onSingleTouch(BubbleView bv) {
-		if(bv != null && TextUtils.isEmpty(bv.getID()) && bv instanceof AvatarBubble) {
+		if(!account.isLoggedIn() && bv != null && TextUtils.isEmpty(bv.getID())
+				&& bv instanceof AvatarBubble) {
 			// login bubble. Open LoginActivity.
 			onLoginBubbleClick((AvatarBubble) bv);
 		} else if(bv != null && list.containsKey(bv.getID()) && !bv.asMainContext) {

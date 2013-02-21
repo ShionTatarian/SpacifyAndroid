@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.database.Cursor;
 import android.view.View;
 import fi.android.spacify.R;
+import fi.android.spacify.db.BubbleDatabase.BubbleColumns;
 import fi.android.spacify.service.AccountService;
 
 public class AvatarBubble extends BubbleView {
@@ -27,6 +28,16 @@ public class AvatarBubble extends BubbleView {
 
 		zoom(1.5d);
 		diameter = 225;
+	}
+
+	@Override
+	public void updateContent(Cursor c) {
+		if(c.getCount() == 0) {
+			return;
+		}
+		this.id = c.getString(c.getColumnIndex(BubbleColumns.ID));
+
+		super.updateContent(c);
 	}
 
 	public void showSpinner(boolean show) {

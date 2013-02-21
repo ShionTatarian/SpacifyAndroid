@@ -3,7 +3,9 @@ package fi.android.spacify.fragment;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.text.TextUtils;
@@ -31,6 +33,7 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 		public static final int WEB = 1005;
 		public static final int VIDEO = 1006;
 		public static final int CALL_TO_SCREEN = 1007;
+		public static final int LOGOUT = 1008;
 	}
 
 	private BubbleView bv;
@@ -94,10 +97,36 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 				holder.image.setImageResource(android.R.drawable.ic_menu_mylocation);
 				holder.image.setOnClickListener(onCallToScreenClick);
 				break;
+			case COMMANDS.LOGOUT:
+				holder.image.setVisibility(View.VISIBLE);
+				holder.image.setImageResource(android.R.drawable.ic_menu_delete);
+				holder.image.setOnClickListener(onLogoutClick);
+				break;
 		}
 
 		return convertView;
 	}
+
+	private OnClickListener onLogoutClick = new OnClickListener() {
+
+		@Override
+		public void onClick(View v) {
+			AlertDialog.Builder alert = new AlertDialog.Builder(act);
+			alert.setTitle(act.getString(R.string.logout));
+			alert.setMessage(act.getString(R.string.logout_are_you_sure));
+			alert.setPositiveButton(R.string.logout_ok, new DialogInterface.OnClickListener() {
+
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					account.logout();
+					act.onMeClick(null);
+				}
+			});
+			alert.setNegativeButton(R.string.logout_cancel, null);
+			alert.show();
+
+		}
+	};
 
 	private OnClickListener onWebClick = new OnClickListener() {
 
