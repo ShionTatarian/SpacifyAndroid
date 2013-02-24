@@ -210,10 +210,9 @@ public class BubbleActivity extends BaseActivity {
 
 	@Override
 	public void onBackPressed() {
-		boolean skipBack = anythingOpen();
 
-		if (skipBack) {
-			onMeClick(null);
+		if (closeAnythingOpen()) {
+			// nothing needs to be done.
 		} else {
 			ImageCache.getInstance().clearCache();
 
@@ -226,25 +225,32 @@ public class BubbleActivity extends BaseActivity {
 		}
 	}
 
-	private boolean anythingOpen() {
+	private boolean closeAnythingOpen() {
 		LayoutParams searchParams = (LayoutParams) searchLayout.getLayoutParams();
 		boolean anythingOpen = false;
+		if (extraPopupFragment.getVisibility() == View.VISIBLE) {
+			closeExtraPopupFragment(null);
+			return true;
+		}
+
 		if (searchParams.rightMargin == 0) {
 			onSearchClick(null);
-			anythingOpen = true;
+			return true;
 		}
 		if (contentLayer.getVisibility() == View.VISIBLE) {
 			closeContentView();
-			anythingOpen = true;
+			return true;
 		}
 		if (t3.getVisibility() == View.VISIBLE) {
 			closeThirdLayer();
 			thirdLayer.clearThirdLayerImages();
-			anythingOpen = true;
+			return true;
 		}
 		if (!anythingOpen && tierZero != null && tierZero.getBubbleView() != null) {
+			onMeClick(null);
 			anythingOpen = true;
 		}
+
 		return anythingOpen;
 	}
 
@@ -287,7 +293,7 @@ public class BubbleActivity extends BaseActivity {
 	};
 
 	public void onMeClick(final View view) {
-		if (!anythingOpen()) {
+		if (view != null && !closeAnythingOpen()) {
 			return;
 		}
 
@@ -711,7 +717,7 @@ public class BubbleActivity extends BaseActivity {
 
 		switch (SpacifyEvents.values()[msg.what]) {
 		case AVATAR_LOGIN_SUCCESS:
-			closeLoginFragment(null);
+			closeExtraPopupFragment(null);
 			break;
 		case ALL_BUBBLES_FETCHED:
 			meContextAdapter.addAll(cms.getBubblesFromCursor(this, cms.getBubblesAlwaysOnScreen()));
@@ -726,7 +732,7 @@ public class BubbleActivity extends BaseActivity {
 
 	public void onCallToScreenClick(View v) {
 
-		double y = 1;
+		double y = 0.6;
 		double x = 0;
 		boolean show = true;
 
@@ -747,7 +753,7 @@ public class BubbleActivity extends BaseActivity {
 		}
 
 		account.callToScreen(x, y, show);
-		closeLoginFragment(null);
+		closeExtraPopupFragment(null);
 
 	}
 
@@ -768,7 +774,7 @@ public class BubbleActivity extends BaseActivity {
 		extraPopupFragment.startAnimation(anim);
 	}
 
-	public void closeLoginFragment(View view) {
+	public void closeExtraPopupFragment(View view) {
 		if (extraPopupFragment.getVisibility() == View.VISIBLE && closeLoginAnimation != null) {
 			closeLoginAnimation.setAnimationListener(new AnimationListener() {
 

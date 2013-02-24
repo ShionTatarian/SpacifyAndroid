@@ -7,8 +7,9 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -41,6 +42,7 @@ public class TierZeroFragment extends BaseFragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		View v = inflater.inflate(R.layout.tier_zero, container, false);
 		text = (TextView) v.findViewById(R.id.zero_text);
+		text.setOnTouchListener(onTierZeroClick);
 		background = (ImageView) v.findViewById(R.id.tier_zero_background);
 //		text.setOnClickListener(onBubbleClick);
 
@@ -54,11 +56,30 @@ public class TierZeroFragment extends BaseFragment {
 		updateContent();
 	}
 
-	private OnClickListener onBubbleClick = new OnClickListener() {
+	private OnTouchListener onTierZeroClick = new OnTouchListener() {
 
 		@Override
-		public void onClick(View v) {
-			bubbleActivity.setTierOne(bv);
+		public boolean onTouch(View v, MotionEvent event) {
+			boolean value = false;
+			if (event.getAction() != MotionEvent.ACTION_DOWN) {
+				return false;
+			}
+			float x = event.getX();
+			float y = event.getY();
+			float vX = 150;
+			float vY = 150;
+			double dist = BubbleFragment.distance(x, y, vX, vY);
+
+			int radius = 150;
+			if (dist >= radius) {
+				// Do not intercept this touch event because it is outside the
+				// bubble circle
+			} else {
+				value = true;
+				bubbleActivity.onTierZeroClick(v);
+			}
+
+			return value;
 		}
 
 	};

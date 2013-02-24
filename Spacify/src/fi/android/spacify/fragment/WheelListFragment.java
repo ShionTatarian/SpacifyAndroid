@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -159,7 +158,7 @@ public class WheelListFragment extends BaseFragment implements OnTouchListener {
 					v.setVisibility(View.INVISIBLE);
 
 					nextPosition = getNextPosition(rotation, 1);
-					Log.w("WheelFragment", "next: " + nextPosition);
+					// Log.w("WheelFragment", "next: " + nextPosition);
 
 					v = adapter.getView(nextPosition, v, layout);
 
@@ -200,7 +199,7 @@ public class WheelListFragment extends BaseFragment implements OnTouchListener {
 			ViewHolder h = (ViewHolder) v.getTag();
 			// Log.w("as", "pos: " + h.position);
 			if(h.position == position) {
-				Log.e("WTF", "Position: " + position + " is USED");
+				// Log.e("WTF", "Position: " + position + " is USED");
 				return true;
 			}
 		}

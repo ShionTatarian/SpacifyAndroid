@@ -99,7 +99,7 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 				break;
 			case COMMANDS.LOGOUT:
 				holder.image.setVisibility(View.VISIBLE);
-				holder.image.setImageResource(android.R.drawable.ic_menu_delete);
+			holder.image.setImageResource(android.R.drawable.ic_lock_power_off);
 				holder.image.setOnClickListener(onLogoutClick);
 				break;
 		}
