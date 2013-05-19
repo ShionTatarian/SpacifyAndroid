@@ -76,7 +76,7 @@ public class TierZeroFragment extends BaseFragment {
 				// bubble circle
 			} else {
 				value = true;
-				bubbleActivity.onTierZeroClick(v);
+				bubbleActivity.onTierZeroClick(null, bv);
 			}
 
 			return value;

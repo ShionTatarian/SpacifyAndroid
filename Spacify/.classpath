@@ -2,12 +2,13 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
-	<classpathentry kind="lib" path="libs/qvik-eventbus.jar"/>
-	<classpathentry kind="lib" path="libs/qvik-httpservice.jar"/>
-	<classpathentry kind="lib" path="libs/qvik-workservice.jar"/>
-	<classpathentry kind="lib" path="libs/android-support-v4.jar"/>
-	<classpathentry kind="lib" path="libs/qvik-imageservice.jar"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry exported="true" kind="lib" path="libs/android-support-v4.jar"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
+	<classpathentry exported="true" kind="lib" path="libs/qvik-eventbus.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/qvik-httpservice.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/qvik-imageservice.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/qvik-workservice.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

@@ -284,10 +284,18 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	private void doubleClick(BubbleView bv) {
-		onBubbleViewClick(bv);
+		// onBubbleViewClick(bv);
+		Activity act = getActivity();
+		if(act != null && act instanceof BubbleActivity) {
+			((BubbleActivity) act).onTierZeroClick(bv, bv);
+		}
 	}
 
 	public void onSingleTouch(BubbleView bv) {
+		onBubbleViewClick(bv);
+	}
+
+	public void dialOpenBubble(BubbleView bv) {
 		if(!account.isLoggedIn() && bv != null && TextUtils.isEmpty(bv.getID())
 				&& bv instanceof AvatarBubble) {
 			// login bubble. Open LoginActivity.
@@ -386,26 +394,26 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	public void onBubbleViewClick(BubbleView bv) {
 		if(!animationInProgress) {
 
-			// Random r = new Random();
-			// if(hasChildsVisible(bv)) {
-			// removeBubbles(bv.getLinks(), bv);
-			// checkChildCount();
-			// return;
-			// }
-			//
-			// for(final BubbleView nBubble : cms.getBubbles(bv.getLinks())) {
-			// if(!list.containsKey(nBubble.getID())) {
-			// Log.d(TAG, "New Bubble [" + nBubble.getTitle() + "]");
-			// animateBubbleAdd(nBubble, bv);
-			// }
-			// }
-			// updateConnections();
-			// checkChildCount();
+			Random r = new Random();
+			if(hasChildsVisible(bv)) {
+				removeBubbles(bv.getLinks(), bv);
+				checkChildCount();
+				return;
+			}
+
+			for(final BubbleView nBubble : cms.getBubbles(getActivity(), bv.getLinks())) {
+				if(!list.containsKey(nBubble.getID())) {
+					Log.d(TAG, "New Bubble [" + nBubble.getTitle() + "]");
+					animateBubbleAdd(nBubble, bv);
+				}
+			}
+			updateConnections();
+			checkChildCount();
 		}
 	}
 
-	private void removeBubbles(List<Integer> links, BubbleView from) {
-		for(int id : links) {
+	private void removeBubbles(List<String> links, BubbleView from) {
+		for(String id : links) {
 			if(from != null) {
 				animateBubbleRemove(list.get(id), from);
 			} else {

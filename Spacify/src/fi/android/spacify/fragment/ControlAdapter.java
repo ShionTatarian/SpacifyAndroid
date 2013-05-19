@@ -184,7 +184,7 @@ public class ControlAdapter extends ArrayAdapter<Integer> {
 
 		@Override
 		public void onClick(View v) {
-			act.onImageClick(bv);
+			act.onImageClick(null, bv);
 		}
 	};
 

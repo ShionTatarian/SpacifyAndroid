@@ -36,7 +36,6 @@ import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
 import fi.android.spacify.R;
 import fi.android.spacify.adapter.BubbleCursorAdapter;
-import fi.android.spacify.adapter.MeContextAdapter;
 import fi.android.spacify.adapter.TierOneAdapter;
 import fi.android.spacify.adapter.WheelAdapter;
 import fi.android.spacify.animation.ReverseInterpolator;
@@ -52,7 +51,6 @@ import fi.android.spacify.fragment.TierZeroFragment;
 import fi.android.spacify.fragment.WheelListFragment;
 import fi.android.spacify.service.AccountService;
 import fi.android.spacify.service.ContentManagementService;
-import fi.android.spacify.view.AvatarBubble;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.BubbleView.BubbleJSON;
 import fi.qvik.android.util.ImageCache;
@@ -72,15 +70,14 @@ public class BubbleActivity extends BaseActivity {
 	private BubbleCursorAdapter bcAdapter;
 	private Gallery searchGallery;
 	public static int height, width;
-	private ImageView seachButton;
+	private ImageView searchButton;
 	private BubbleFragment activeBubbleFragment;
 	private ValueAnimator va;
 	private Button meBubble;
 
-	private int contextLarge, contextSmall;
-
-	private WheelListFragment meContextFragment, tierOne;
-	private WheelAdapter meContextAdapter;
+//	private WheelListFragment meContextFragment;
+	private WheelListFragment tierOne;
+//	private WheelAdapter meContextAdapter;
 
 	private boolean tierOneOpen = false;
 
@@ -122,22 +119,20 @@ public class BubbleActivity extends BaseActivity {
 		history = findViewById(R.id.history_layer);
 		popup = findViewById(R.id.control_popup);
 
-		meContextAdapter = new MeContextAdapter(this);
-		meContextAdapter.addAll(cms.getBubblesFromCursor(this, cms.getBubblesAlwaysOnScreen()));
-		meContextAdapter.setBubbleSize((int) getResources().getDimension(R.dimen.tier_two_bubble));
-		meContextFragment = new WheelListFragment();
-		meContextFragment.setTierSize((int) getResources().getDimension(R.dimen.context_round_list));
-		meContextFragment.setAdapter(meContextAdapter);
-		changeFragment(R.id.round_context_list, meContextFragment);
+//		meContextAdapter = new MeContextAdapter(this);
+//		meContextAdapter.addAll(cms.getBubblesFromCursor(this, cms.getBubblesAlwaysOnScreen()));
+//		meContextAdapter.setBubbleSize((int) getResources().getDimension(R.dimen.tier_two_bubble));
+//		meContextFragment = new WheelListFragment();
+//		meContextFragment.setTierSize((int) getResources().getDimension(R.dimen.context_round_list));
+//		meContextFragment.setAdapter(meContextAdapter);
+//		changeFragment(R.id.round_context_list, meContextFragment);
 
 		thirdLayer = new ThirdLayerBaseFragment();
 		changeFragment(R.id.third_layer, thirdLayer);
 
-		contextLarge = (int) getResources().getDimension(R.dimen.context_me);
-		contextSmall = (int) getResources().getDimension(R.dimen.context_me_side);
 		bg = findViewById(R.id.bubble_background);
 		searchLayout = findViewById(R.id.search_layout);
-		seachButton = (ImageView) findViewById(R.id.search_button);
+		searchButton = (ImageView) findViewById(R.id.search_button);
 		searchEdit = (EditText) findViewById(R.id.search_edit);
 		searchGallery = (Gallery) findViewById(R.id.search_bubble_gallery);
 		searchGallery.setOnItemClickListener(onSearchGalleryClick);
@@ -177,32 +172,36 @@ public class BubbleActivity extends BaseActivity {
 		ft.commit();
 
 		openBubbleFragment();
+
+		searchButton.setVisibility(View.GONE);
 	}
 
 	private void openBubbleFragment() {
 		if (activeBubbleFragment == null) {
 			activeBubbleFragment = new BubbleFragment();
+			activeBubbleFragment.setBubbleCursor(cms.getBubblesAlwaysOnScreen(), this);
 			changeFragment(R.id.bubble_root, activeBubbleFragment);
 
-			if (account.isLoggedIn()) {
-				// set avatar bubble and bubbles linked to it
-				AvatarBubble avatar = new AvatarBubble(BubbleActivity.this, account.getAvatarBubbleCursor());
-				if (avatar.x <= 0 && avatar.y <= 0) {
-					avatar.x = (width / 2);
-					avatar.y = (height / 5);
-				}
-				activeBubbleFragment.addBubble(avatar);
-				activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(account.getFavorites()), BubbleActivity.this);
-				activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(avatar.getLinks()), BubbleActivity.this);
-			} else {
-				// set login bubble
-				AvatarBubble avatar = new AvatarBubble(this, "");
-				if (avatar.x <= 0 && avatar.y <= 0) {
-					avatar.x = (width / 2);
-					avatar.y = (height / 5);
-				}
-				activeBubbleFragment.addBubble(avatar);
-			}
+
+//			if (account.isLoggedIn()) {
+//				// set avatar bubble and bubbles linked to it
+//				AvatarBubble avatar = new AvatarBubble(BubbleActivity.this, account.getAvatarBubbleCursor());
+//				if (avatar.x <= 0 && avatar.y <= 0) {
+//					avatar.x = (width / 2);
+//					avatar.y = (height / 5);
+//				}
+//				activeBubbleFragment.addBubble(avatar);
+//				activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(account.getFavorites()), BubbleActivity.this);
+//				activeBubbleFragment.setBubbleCursor(cms.getBubblesCursor(avatar.getLinks()), BubbleActivity.this);
+//			} else {
+//				// set login bubble
+//				AvatarBubble avatar = new AvatarBubble(this, "");
+//				if (avatar.x <= 0 && avatar.y <= 0) {
+//					avatar.x = (width / 2);
+//					avatar.y = (height / 5);
+//				}
+//				activeBubbleFragment.addBubble(avatar);
+//			}
 		}
 
 		openRootAnimation(null);
@@ -273,8 +272,8 @@ public class BubbleActivity extends BaseActivity {
 			c.moveToPosition(position);
 			BubbleView bv = new BubbleView(BubbleActivity.this, c);
 
-			meContextAdapter.setSelected(bv);
-			meContextFragment.redraw();
+//			meContextAdapter.setSelected(bv);
+//			meContextFragment.redraw();
 			setTierZero(bv, anim, true);
 		}
 	};
@@ -302,8 +301,8 @@ public class BubbleActivity extends BaseActivity {
 		closeControlPopup();
 		historyLayerFragment.clearHistory();
 
-		meContextAdapter.setSelected(null);
-		meContextFragment.redraw();
+//		meContextAdapter.setSelected(null);
+//		meContextFragment.redraw();
 		if (tierZero != null) {
 			tierZero.clear();
 			removeFragment(tierZero);
@@ -378,7 +377,7 @@ public class BubbleActivity extends BaseActivity {
 			@Override
 			public void onAnimationUpdate(ValueAnimator animation) {
 				params.rightMargin = (Integer) animation.getAnimatedValue();
-				seachButton.post(new Runnable() {
+				searchButton.post(new Runnable() {
 
 					@Override
 					public void run() {
@@ -615,8 +614,8 @@ public class BubbleActivity extends BaseActivity {
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
 		anim.setInterpolator(new AccelerateInterpolator());
 
-		meContextAdapter.setSelected(bv);
-		meContextFragment.redraw();
+//		meContextAdapter.setSelected(bv);
+//		meContextFragment.redraw();
 		setTierZero(bv, anim, true);
 	}
 
@@ -671,7 +670,7 @@ public class BubbleActivity extends BaseActivity {
 
 	}
 
-	public void onImageClick(BubbleView bv) {
+	public void onImageClick(BubbleView from, BubbleView bv) {
 		if (t3.getVisibility() == View.VISIBLE) {
 			closeThirdLayer();
 			thirdLayer.clearThirdLayerImages();
@@ -680,8 +679,15 @@ public class BubbleActivity extends BaseActivity {
 		thirdLayer.onImageClick(bv);
 
 		t3.setVisibility(View.VISIBLE);
-		Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_PARENT, 0.5f,
-				Animation.RELATIVE_TO_PARENT, 0.75f);
+		Animation anim = null;
+		if(from != null) {
+			anim = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE,
+					(from.x - bv.x + (from.getRadius())), Animation.ABSOLUTE,
+					(from.y - bv.y + (from.getRadius())));
+		} else {
+			anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_PARENT, 0.5f,
+					Animation.RELATIVE_TO_PARENT, 0.75f);
+		}
 		anim.setInterpolator(new AccelerateInterpolator());
 		anim.setDuration(StaticUtils.ANIMATION_DURATION);
 
@@ -720,8 +726,8 @@ public class BubbleActivity extends BaseActivity {
 			closeExtraPopupFragment(null);
 			break;
 		case ALL_BUBBLES_FETCHED:
-			meContextAdapter.addAll(cms.getBubblesFromCursor(this, cms.getBubblesAlwaysOnScreen()));
-			meContextFragment.redraw();
+//			meContextAdapter.addAll(cms.getBubblesFromCursor(this, cms.getBubblesAlwaysOnScreen()));
+//			meContextFragment.redraw();
 			break;
 		default:
 			break;
@@ -860,7 +866,7 @@ public class BubbleActivity extends BaseActivity {
 		}).start();
 	}
 
-	public void onTierZeroClick(View view) {
+	public void onTierZeroClick(BubbleView from, BubbleView bv) {
 		boolean skipOpenContent = false;
 		if (contentLayer.getVisibility() == View.VISIBLE) {
 			closeContentView();
@@ -873,11 +879,10 @@ public class BubbleActivity extends BaseActivity {
 		}
 
 		if (!skipOpenContent && tierZero != null) {
-			BubbleView bv = tierZero.getBubbleView();
 			JSONObject json = bv.getStyleOverrides();
 			if (!TextUtils.isEmpty(bv.getContents())
 					|| (json != null && StaticUtils.parseStringJSON(json, BubbleJSON.contentsImageUrl, null) != null)) {
-				onImageClick(bv);
+				onImageClick(from, bv);
 			}
 		}
 	}
