@@ -394,7 +394,6 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	public void onBubbleViewClick(BubbleView bv) {
 		if(!animationInProgress) {
 
-			Random r = new Random();
 			if(hasChildsVisible(bv)) {
 				removeBubbles(bv.getLinks(), bv);
 				checkChildCount();

@@ -28,6 +28,8 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 	private static final int VERSION = 1;
 	private static final String DB_NAME = "smartspace.db";
 	private static final String BUBBLE_TABLE = "bubble_tbl";
+	private static final String ANALYTICS_TABLE = "analytics_tbl";
+
 
 	@SuppressWarnings("javadoc")
 	public static class BubbleColumns {
@@ -51,6 +53,11 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 
 		// Custom fields
 		public static final String CONTEXT = "context";
+	}
+
+	public static class AnalyticsColumns {
+		public static final String TIME = "_id";
+		public static final String JSON = "title";
 	}
 
 	private BubbleDatabase(Context context) {
@@ -96,6 +103,14 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		sql.append(BubbleColumns.Y).append(" INTEGER,");
 		sql.append(BubbleColumns.ALWAYS_ON_SCREEN).append(" INTEGER,");
 		sql.append(BubbleColumns.CONTEXT).append(" TEXT");
+		sql.append(")");
+
+		db.execSQL(sql.toString());
+
+		sql = new StringBuilder();
+		sql.append("CREATE TABLE ").append(ANALYTICS_TABLE).append(" (");
+		sql.append(AnalyticsColumns.TIME).append(" INTEGER PRIMARY KEY,");
+		sql.append(AnalyticsColumns.JSON).append(" TEXT");
 		sql.append(")");
 
 		db.execSQL(sql.toString());
@@ -280,6 +295,16 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 
 		db.setTransactionSuccessful();
 		db.endTransaction();
+	}
+
+	public void analyticMessage(JSONObject message) {
+		long time = System.currentTimeMillis();
+		ContentValues values = new ContentValues();
+		values.put(AnalyticsColumns.TIME, time);
+		values.put(AnalyticsColumns.JSON, message.toString());
+
+		SQLiteDatabase db = getWritableDatabase();
+		db.insertOrThrow(ANALYTICS_TABLE, null, values);
 	}
 
 	public void removeAvatarLink(String avatarBubbleID, BubbleView bv) {
