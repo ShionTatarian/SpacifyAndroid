@@ -58,7 +58,6 @@ public class AnalyticsService {
 	}
 
 	private void applicationStarted() {
-		Log.d(TAG, "Application started");
 		ws.postWork(new Runnable() {
 
 			@Override
@@ -75,7 +74,6 @@ public class AnalyticsService {
 	}
 
 	public void bubbleOpened(final BubbleView bv) {
-		Log.d(TAG, "Bubble opened");
 		ws.postWork(new Runnable() {
 
 			@Override
@@ -94,7 +92,6 @@ public class AnalyticsService {
 	}
 
 	public void bubbleChildrenClosed(final BubbleView bv) {
-		Log.d(TAG, "Bubble children closed");
 		ws.postWork(new Runnable() {
 
 			@Override
@@ -113,7 +110,6 @@ public class AnalyticsService {
 	}
 
 	public void bubbleChildrenOpened(final BubbleView bv) {
-		Log.d(TAG, "Bubble children opened");
 		ws.postWork(new Runnable() {
 
 			@Override
@@ -132,7 +128,6 @@ public class AnalyticsService {
 	}
 
 	public void meClicked() {
-		Log.d(TAG, "Me clicked");
 		ws.postWork(new Runnable() {
 
 			@Override
