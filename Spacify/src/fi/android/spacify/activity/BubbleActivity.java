@@ -50,6 +50,7 @@ import fi.android.spacify.fragment.TierOneWheelListFragment;
 import fi.android.spacify.fragment.TierZeroFragment;
 import fi.android.spacify.fragment.WheelListFragment;
 import fi.android.spacify.service.AccountService;
+import fi.android.spacify.service.AnalyticsService;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.BubbleView.BubbleJSON;
@@ -63,6 +64,7 @@ public class BubbleActivity extends BaseActivity {
 
 	private final ContentManagementService cms = ContentManagementService.getInstance();
 	private final AccountService account = AccountService.getInstance();
+	private final AnalyticsService as = AnalyticsService.getInstance();
 
 	private ViewGroup root;
 	private View bg, searchLayout;
@@ -292,6 +294,7 @@ public class BubbleActivity extends BaseActivity {
 	};
 
 	public void onMeClick(final View view) {
+		as.meClicked();
 		if (view != null && !closeAnythingOpen()) {
 			return;
 		}
@@ -429,7 +432,14 @@ public class BubbleActivity extends BaseActivity {
 		if (activeBubbleFragment != null) {
 			activeBubbleFragment.saveBubbles();
 		}
+
 		super.onDestroy();
+	}
+
+	@Override
+	protected void onPause() {
+		AnalyticsService.getInstance().writeAnalyticsToFile();
+		super.onPause();
 	}
 
 	private AnimationListener hideRootAnimationListener = new AnimationListener() {
@@ -454,6 +464,8 @@ public class BubbleActivity extends BaseActivity {
 	private CallToScreenFragment callToScreenFragment;
 
 	public void setTierZero(final BubbleView bv, Animation anim, boolean addToHistory) {
+		as.bubbleChildrenOpened(bv);
+
 		if (root.getVisibility() == View.VISIBLE) {
 			Animation closeFragmentAnimation = closeToAnimation(0, 1);
 			closeFragmentAnimation.setAnimationListener(hideRootAnimationListener);
@@ -681,9 +693,11 @@ public class BubbleActivity extends BaseActivity {
 		t3.setVisibility(View.VISIBLE);
 		Animation anim = null;
 		if(from != null) {
-			anim = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE,
-					(from.x - bv.x + (from.getRadius())), Animation.ABSOLUTE,
-					(from.y - bv.y + (from.getRadius())));
+			float pivotX = from.getX() / width;
+			float pivotY = from.getY() / height;
+
+			anim = new ScaleAnimation(0.2f, 1, 0.2f, 1, Animation.RELATIVE_TO_PARENT, pivotX,
+					Animation.RELATIVE_TO_PARENT, pivotY);
 		} else {
 			anim = new ScaleAnimation(0, 1, 0, 1, Animation.RELATIVE_TO_PARENT, 0.5f,
 					Animation.RELATIVE_TO_PARENT, 0.75f);
@@ -878,10 +892,11 @@ public class BubbleActivity extends BaseActivity {
 			skipOpenContent = true;
 		}
 
-		if (!skipOpenContent && tierZero != null) {
+		if(!skipOpenContent) {
 			JSONObject json = bv.getStyleOverrides();
 			if (!TextUtils.isEmpty(bv.getContents())
 					|| (json != null && StaticUtils.parseStringJSON(json, BubbleJSON.contentsImageUrl, null) != null)) {
+				as.bubbleOpened(bv);
 				onImageClick(from, bv);
 			}
 		}

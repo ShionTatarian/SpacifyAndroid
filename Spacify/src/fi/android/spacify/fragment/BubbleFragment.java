@@ -29,6 +29,7 @@ import fi.android.spacify.R;
 import fi.android.spacify.activity.BubbleActivity;
 import fi.android.spacify.animation.ReverseInterpolator;
 import fi.android.spacify.service.AccountService;
+import fi.android.spacify.service.AnalyticsService;
 import fi.android.spacify.service.ContentManagementService;
 import fi.android.spacify.view.AvatarBubble;
 import fi.android.spacify.view.BaseBubbleView;
@@ -46,6 +47,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	private final ContentManagementService cms = ContentManagementService.getInstance();
 	private final AccountService account = AccountService.getInstance();
+	private final AnalyticsService as = AnalyticsService.getInstance();
 
 	private Map<String, BubbleView> list = new HashMap<String, BubbleView>();
 	private ConnectionLayout frame;
@@ -123,20 +125,9 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		@Override
 		public void run() {
 			if(updateSize()) {
-				Random r = new Random();
 				for(BubbleView b : list.values()) {
 					b.setOnTouchListener(BubbleFragment.this);
-					if(b.x <= 0 && b.y <= 0) {
-						int radius = b.getRadius();
-						int xn = width / radius;
-						int yn = height / radius;
-						int x = radius * r.nextInt(xn);
-						int y = radius * r.nextInt(yn - 1);
-
-						b.move(x, y, width, height);
-					} else {
-						b.move(b.x, b.y, width, height);
-					}
+					moveBubbleRandomLocation(b);
 
 					frame.addView(b);
 				}
@@ -195,7 +186,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			case MotionEvent.ACTION_DOWN:
 			case MotionEvent.ACTION_POINTER_DOWN:
 				if(bv != null) {
-					if(bv.onTouchDown() && bv instanceof BubbleView) {
+					if(bv.onTouchDown(this) && bv instanceof BubbleView) {
 						doubleClick((BubbleView) bv);
 					}
 					int dx = (int) (v.getLeft() - x + (v.getWidth() / 2));
@@ -203,9 +194,6 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 					bv.offsetX = dx;
 					bv.offsetY = dy;
 
-					if(bv.getID() != firstTouched.getID()) {
-						firstTouched = null;
-					}
 				}
 				break;
 			case MotionEvent.ACTION_MOVE:
@@ -263,7 +251,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 					firstTouched.endZoom();
 					if(event.getPointerCount() == 1) {
 						if(firstTouched.moved <= BaseBubbleView.MOVEMENT_TOUCH_TRESHOLD
-								&& bv instanceof BubbleView) {
+								&& bv instanceof BubbleView && bv != null && bv.onTouchUp()) {
 							onSingleTouch((BubbleView) bv);
 						}
 						firstTouched = null;
@@ -271,9 +259,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 				}
 				initialD = -1;
 
-				if(bv != null) {
-					bv.onTouchUp();
-				} else if(firstTouched == null) {
+				if(bv == null && firstTouched == null) {
 					onEmptyClick();
 				}
 
@@ -284,7 +270,6 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	private void doubleClick(BubbleView bv) {
-		// onBubbleViewClick(bv);
 		Activity act = getActivity();
 		if(act != null && act instanceof BubbleActivity) {
 			((BubbleActivity) act).onTierZeroClick(bv, bv);
@@ -292,7 +277,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	public void onSingleTouch(BubbleView bv) {
-		onBubbleViewClick(bv);
+		// onBubbleViewClick(bv);
+		dialOpenBubble(bv);
 	}
 
 	public void dialOpenBubble(BubbleView bv) {
@@ -394,11 +380,13 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	public void onBubbleViewClick(BubbleView bv) {
 		if(!animationInProgress) {
 
-			if(hasChildsVisible(bv)) {
+			if(hasAllChildsVisible(bv)) {
 				removeBubbles(bv.getLinks(), bv);
 				checkChildCount();
+				as.bubbleChildrenClosed(bv);
 				return;
 			}
+			as.bubbleChildrenOpened(bv);
 
 			for(final BubbleView nBubble : cms.getBubbles(getActivity(), bv.getLinks())) {
 				if(!list.containsKey(nBubble.getID())) {
@@ -413,10 +401,12 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 	private void removeBubbles(List<String> links, BubbleView from) {
 		for(String id : links) {
+			BubbleView child = list.get(id);
+			// if(from != null && !hasAnyChildsVisible(child, from.getID())) {
 			if(from != null) {
-				animateBubbleRemove(list.get(id), from);
-			} else {
-				removeBubble(list.get(id));
+				animateBubbleRemove(child, from);
+			} else if(from == null) {
+				removeBubble(child);
 			}
 		}
 	}
@@ -466,6 +456,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	private void animateBubbleAdd(final BubbleView bv, BubbleView from) {
 		if(!list.containsKey(bv.getID())) {
 			frame.addView(bv);
+			moveBubbleRandomLocation(bv);
 
 			Animation anim = new ScaleAnimation(0, 1, 0, 1, Animation.ABSOLUTE,
 					(from.x - bv.x + (from.getRadius())), Animation.ABSOLUTE,
@@ -500,6 +491,14 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		}
 	}
 
+	private void moveBubbleRandomLocation(BubbleView bv) {
+		Random r = new Random();
+		int radius = bv.getRadius();
+		int x = radius + r.nextInt(width - radius);
+		int y = radius + r.nextInt(height - radius);
+		bv.move(x, y, BubbleActivity.width, BubbleActivity.height);
+	}
+
 	public void addBubble(BubbleView bv) {
 		ViewGroup parent = (ViewGroup) bv.getParent();
 		if(parent != null) {
@@ -508,7 +507,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 
 		if(frame != null) {
 			frame.addView(bv);
-			bv.move(bv.x, bv.y, BubbleActivity.width, BubbleActivity.height);
+			moveBubbleRandomLocation(bv);
 		}
 		bv.setOnTouchListener(BubbleFragment.this);
 		list.put(bv.getID(), bv);
@@ -631,7 +630,7 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		updateConnections();
 	}
 	
-	public boolean hasChildsVisible(BubbleView bv) {
+	public boolean hasAllChildsVisible(BubbleView bv) {
 		for(String id : bv.getLinks()) {
 			if(id != bv.getID()) {
 				BubbleView child = list.get(id);
@@ -641,6 +640,18 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 			}
 		}
 		return true;
+	}
+
+	public boolean hasAnyChildsVisible(BubbleView bv, String parentID) {
+		for(String id : bv.getLinks()) {
+			if(id != bv.getID()) {
+				BubbleView child = list.get(id);
+				if(child != null && (child == null || !child.getID().equals(parentID))) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private void updateConnections() {
@@ -692,6 +703,12 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		thirdLayer.onTouchDown();
 		thirdLayer.move(bv.x, bv.y, width, height);
 		thirdLayer.onTouchUp();
+	}
+
+	public void onLongClick(BaseBubbleView bv) {
+		if(bv instanceof BubbleView) {
+			doubleClick((BubbleView) bv);
+		}
 	}
 
 }

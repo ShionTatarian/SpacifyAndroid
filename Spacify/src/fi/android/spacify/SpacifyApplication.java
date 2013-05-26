@@ -5,6 +5,7 @@ import java.io.File;
 import android.app.Application;
 import fi.android.spacify.db.BubbleDatabase;
 import fi.android.spacify.service.AccountService;
+import fi.android.spacify.service.AnalyticsService;
 import fi.android.spacify.service.ContentManagementService;
 import fi.qvik.android.util.ImageService;
 import fi.qvik.android.util.WorkService;
@@ -27,6 +28,7 @@ public class SpacifyApplication extends Application {
 		ContentManagementService.init(getApplicationContext());
 		BaseSettings.init(getApplicationContext());
 		AccountService.init(getApplicationContext());
+		AnalyticsService.init();
 
 		File images = new File(getFilesDir(), "images/");
 		images.mkdirs();

@@ -1,6 +1,9 @@
 package fi.android.spacify.view;
 
+import java.lang.ref.WeakReference;
+
 import android.app.Activity;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -20,6 +23,7 @@ public abstract class BaseBubbleView extends FrameLayout {
 	public static final int MOVEMENT_TOUCH_TRESHOLD = 10;
 
 	private final int DOUBLE_CLICK_DELAY = 300;
+	private final int LONG_CLICK_DELAY = 400;
 	
 	protected String id;
 	protected Activity activity;
@@ -33,10 +37,13 @@ public abstract class BaseBubbleView extends FrameLayout {
 	private int startX = 0, startY = 0;
 	public double moved = 0;
 	public boolean asMainContext = false;
+	private Handler handler;
+	private Runnable handleRunnable;
 
 	public BaseBubbleView(Activity act) {
 		super(act);
 		this.activity = act;
+		handler = new Handler();
 		LayoutInflater.from(act).inflate(getLayout(), this, true);
 		background = (ImageView) findViewById(R.id.base_bubble_background);
 		bubbleText = findViewById(R.id.base_bubble_bubble);
@@ -55,10 +62,11 @@ public abstract class BaseBubbleView extends FrameLayout {
 	}
 	
 	public boolean onTouchDown() {
-		boolean value = false;
 		long currentTime = System.currentTimeMillis();
 		if(currentTime - previousTouchDown <= DOUBLE_CLICK_DELAY) {
-			value = true;
+			doubleClicked = true;
+		} else {
+			doubleClicked = false;
 		}
 		
 		previousTouchDown = System.currentTimeMillis();
@@ -69,16 +77,38 @@ public abstract class BaseBubbleView extends FrameLayout {
 		startX = params.leftMargin;
 		startY = params.topMargin;
 		
-		return value;
+		return doubleClicked;
+	}
+
+	public boolean onTouchDown(BubbleFragment bf) {
+		final WeakReference<BubbleFragment> wBf = new WeakReference<BubbleFragment>(bf);
+
+		handleRunnable = new Runnable() {
+			
+			@Override
+			public void run() {
+				doubleClicked = true;
+				handleRunnable = null;
+				BubbleFragment frag = wBf.get();
+				frag.onLongClick(BaseBubbleView.this);
+			}
+		};
+
+		handler.postDelayed(handleRunnable, LONG_CLICK_DELAY);
+		
+		return onTouchDown();
 	}
 
 	private long previousTouchDown = 0;
 
-	public void onTouchUp() {
+	public boolean onTouchUp() {
+		cancelDoubleClick();
 		offsetX = 0;
 		offsetY = 0;
 		movement = BubbleMovement.INERT;
 		endZoom();
+
+		return !doubleClicked;
 	}
 
 	public int offsetX = 0;
@@ -160,6 +190,21 @@ public abstract class BaseBubbleView extends FrameLayout {
 		if(m >= moved) {
 			moved = m;
 		}
+
+		if(moved >= MOVEMENT_TOUCH_TRESHOLD) {
+			cancelDoubleClick();
+		}
+	}
+
+	private boolean doubleClicked = false;
+
+	private void cancelDoubleClick() {
+		if(handleRunnable == null) {
+			return;
+		}
+		doubleClicked = false;
+		handler.removeCallbacks(handleRunnable);
+		handleRunnable = null;
 	}
 
 	public void zoom(double d) {

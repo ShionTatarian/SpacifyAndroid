@@ -185,7 +185,7 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		String selection = "";
 		selection = BubbleColumns.ALWAYS_ON_SCREEN + " = 1";
 
-		return db.query(BUBBLE_TABLE, null, selection, null, null, null, BubbleColumns.TITLE);
+		return db.query(true, BUBBLE_TABLE, null, selection, null, null, null, BubbleColumns.SIZE, "10");
 	}
 
 	public Cursor getBubblesInContext(String context) {
@@ -297,8 +297,14 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		db.endTransaction();
 	}
 
+	private long previousAnalyticTimeStamp = Long.MIN_VALUE;
+
 	public void analyticMessage(JSONObject message) {
 		long time = System.currentTimeMillis();
+		if(time == previousAnalyticTimeStamp) {
+			time = previousAnalyticTimeStamp+1;
+		}
+		previousAnalyticTimeStamp = time;
 		ContentValues values = new ContentValues();
 		values.put(AnalyticsColumns.TIME, time);
 		values.put(AnalyticsColumns.JSON, message.toString());
@@ -310,6 +316,12 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 	public void removeAvatarLink(String avatarBubbleID, BubbleView bv) {
 		// TODO Auto-generated method stub
 
+	}
+
+	public Cursor getAnalyticsCursor() {
+		SQLiteDatabase db = getReadableDatabase();
+
+		return db.query(ANALYTICS_TABLE, null, null, null, null, null, AnalyticsColumns.TIME);
 	}
 
 }
