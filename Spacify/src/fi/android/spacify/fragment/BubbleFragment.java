@@ -277,8 +277,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	public void onSingleTouch(BubbleView bv) {
-		// onBubbleViewClick(bv);
-		dialOpenBubble(bv);
+		onBubbleViewClick(bv);
+		// dialOpenBubble(bv);
 	}
 
 	public void dialOpenBubble(BubbleView bv) {

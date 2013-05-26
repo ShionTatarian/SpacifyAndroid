@@ -13,6 +13,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.text.TextUtils;
+import android.util.Log;
 import fi.android.spacify.view.BubbleView;
 import fi.android.spacify.view.BubbleView.BubbleContexts;
 import fi.android.spacify.view.BubbleView.BubbleJSON;
@@ -308,6 +309,8 @@ public class BubbleDatabase extends SQLiteOpenHelper {
 		ContentValues values = new ContentValues();
 		values.put(AnalyticsColumns.TIME, time);
 		values.put(AnalyticsColumns.JSON, message.toString());
+
+		Log.d(TAG, "Analytics: [" + time + "]: " + message.toString());
 
 		SQLiteDatabase db = getWritableDatabase();
 		db.insertOrThrow(ANALYTICS_TABLE, null, values);
