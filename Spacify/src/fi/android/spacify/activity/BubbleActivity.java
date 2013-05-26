@@ -179,9 +179,10 @@ public class BubbleActivity extends BaseActivity {
 	}
 
 	private void openBubbleFragment() {
-		if (activeBubbleFragment == null) {
+		Cursor c = cms.getBubblesAlwaysOnScreen();
+		if(activeBubbleFragment == null || c.getCount() < activeBubbleFragment.getBubbleCount()) {
 			activeBubbleFragment = new BubbleFragment();
-			activeBubbleFragment.setBubbleCursor(cms.getBubblesAlwaysOnScreen(), this);
+			activeBubbleFragment.setBubbleCursor(c, this);
 			changeFragment(R.id.bubble_root, activeBubbleFragment);
 
 
@@ -205,7 +206,6 @@ public class BubbleActivity extends BaseActivity {
 //				activeBubbleFragment.addBubble(avatar);
 //			}
 		}
-
 		openRootAnimation(null);
 	}
 
@@ -296,6 +296,7 @@ public class BubbleActivity extends BaseActivity {
 	public void onMeClick(final View view) {
 		as.meClicked();
 		if (view != null && !closeAnythingOpen()) {
+			openBubbleFragment();
 			return;
 		}
 

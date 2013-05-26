@@ -711,4 +711,8 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 		}
 	}
 
+	public int getBubbleCount() {
+		return list.size();
+	}
+
 }
