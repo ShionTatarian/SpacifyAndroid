@@ -26,6 +26,7 @@ public class AnalyticsService {
 		public static final String EVENT = "event";
 		public static final String BUBBLE = "bubble";
 		public static final String BUBBLE_NAME = "bubble name";
+		public static final String MESSAGE = "message";
 	}
 
 	public static class EVENTS {
@@ -35,6 +36,7 @@ public class AnalyticsService {
 		public static final String CHILDREN_CLOSED = "children closed";
 		public static final String CHILDREN_OPENED = "children opened";
 		public static final String ME_CLICKED = "ME button clicked";
+		public static final String CUSTOM_MESSAGE = "custom message";
 	}
 
 	private AnalyticsService() {
@@ -173,6 +175,23 @@ public class AnalyticsService {
 					Log.e(TAG, "Analytic writing error: ", e);
 				}
 				c.close();
+			}
+		});
+	}
+
+	public void storeAnalyticMessage(final String customMessage) {
+		ws.postWork(new Runnable() {
+
+			@Override
+			public void run() {
+				JSONObject message = new JSONObject();
+				try {
+					message.put(ANALYTICS.MESSAGE, customMessage);
+					message.put(ANALYTICS.EVENT, EVENTS.CUSTOM_MESSAGE);
+				} catch(JSONException e) {
+					// TODO: handle exception
+				}
+				db.analyticMessage(message);
 			}
 		});
 	}

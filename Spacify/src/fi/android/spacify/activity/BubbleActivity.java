@@ -4,7 +4,9 @@ import org.json.JSONObject;
 
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -17,6 +19,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
@@ -207,7 +210,35 @@ public class BubbleActivity extends BaseActivity {
 //			}
 //		}
 		openRootAnimation(null);
+		findViewById(R.id.button_me).setOnLongClickListener(onMeLongClick);
 	}
+
+	private OnLongClickListener onMeLongClick = new OnLongClickListener() {
+
+		@Override
+		public boolean onLongClick(View v) {
+			AlertDialog.Builder alert = new AlertDialog.Builder(BubbleActivity.this);
+
+			alert.setTitle("Analytic");
+			alert.setMessage("Message");
+
+			// Set an EditText view to get user input
+			final EditText editText = new EditText(BubbleActivity.this);
+			alert.setView(editText);
+
+			alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int whichButton) {
+//					Toast.makeText(getApplicationContext(), editText.getText().toString(),
+//							Toast.LENGTH_SHORT).show();
+					as.storeAnalyticMessage(editText.getText().toString());
+				}
+			});
+
+			alert.show();
+			return true;
+		}
+	};
 
 	@Override
 	public void onBackPressed() {
