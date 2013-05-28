@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import android.app.Activity;
 import android.database.Cursor;
@@ -492,11 +491,11 @@ public class BubbleFragment extends BaseFragment implements OnTouchListener {
 	}
 
 	private void moveBubbleRandomLocation(BubbleView bv) {
-		Random r = new Random();
-		int radius = bv.getRadius();
-		int x = radius + r.nextInt(width - radius);
-		int y = radius + r.nextInt(height - radius);
-		bv.move(x, y, BubbleActivity.width, BubbleActivity.height);
+		// Random r = new Random();
+		// int radius = bv.getRadius();
+		// int x = radius + r.nextInt(width - radius);
+		// int y = radius + r.nextInt(height - radius);
+		bv.move(bv.x, bv.y, BubbleActivity.width, BubbleActivity.height);
 	}
 
 	public void addBubble(BubbleView bv) {
