@@ -37,6 +37,8 @@ public class SpacifyApplication extends Application {
 		ImageService.getInstance().setThreadCount(3);
 		ImageService.getInstance().useImageCache(true, 10);
 		
+		ContentManagementService.getInstance().fetchBubbles();
+
 		super.onCreate();
 	}
 	
